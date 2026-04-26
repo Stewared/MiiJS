@@ -8,6 +8,15 @@ import { Buffer } from "./platform.js";
 
 import { scanQR } from "./qrTools.js";
 
+function isWebp(buf) {
+    return (
+        Buffer.isBuffer(buf)
+        && buf.length >= 12
+        && buf.toString("ascii", 0, 4) === "RIFF"
+        && buf.toString("ascii", 8, 12) === "WEBP"
+    );
+}
+
 /** @typedef {Buffer|Uint8Array|ArrayBuffer|SharedArrayBuffer} SupportedBuffers */
 
 /** Returns polyfilled buffer if type is buffer type, else false */
@@ -320,6 +329,7 @@ function detectMiiFormat(buf, debug) {
         //We only do this if no other format matches since Miis have no headers/magic bytes and I imagine some format could have the potential to collide with a PNG/JPG's
         if (isPng(buf)) matches.push("png");
         if (isJpg(buf)) matches.push("jpg");
+        if (isWebp(buf)) matches.push("webp");
     }
 
     return matches;
@@ -345,9 +355,9 @@ function decodeMii(toDecode, debug) {
 
     //Choose the file type to decode it from
     var miiType = detectMiiFormat(toDecode);
-    if (miiType.includes("png") || miiType.includes("jpg")) {
+    if (miiType.includes("png") || miiType.includes("jpg") || miiType.includes("webp")) {
         toDecode = scanQR(toDecode);
-        if (toDecode === null) throw new Error(`Detected a PNG/JPG, but couldn't decode the QR code!`);
+        if (toDecode === null) throw new Error(`Detected an image QR format (PNG/JPG/WEBP), but couldn't decode the QR code!`);
         miiType = detectMiiFormat(toDecode);
     }
     miiType = miiType.filter(a => formats[a].hasOwnProperty("struct"));

@@ -149,10 +149,10 @@ class Mii {
         // We detect by magic bytes/content and scan the QR before decodeMii().
         try{
             const formats = detectMiiFormat(input);
-            if (formats.includes("png") || formats.includes("jpg")) {
+            if (formats.includes("png") || formats.includes("jpg") || formats.includes("webp")) {
                 const scanned = await scanQR(input);
                 if (!scanned) {
-                    throw new Error("Detected a PNG/JPG, but couldn't decode the QR code!");
+                    throw new Error("Detected an image QR format (PNG/JPG/WEBP), but couldn't decode the QR code!");
                 }
                 input = scanned;
             }

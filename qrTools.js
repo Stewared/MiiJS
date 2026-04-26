@@ -11,6 +11,109 @@ const ONE_BY_ONE_GIF =
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
 
+function isWebp(buf) {
+  return (
+    Buffer.isBuffer(buf)
+    && buf.length >= 12
+    && buf.toString("ascii", 0, 4) === "RIFF"
+    && buf.toString("ascii", 8, 12) === "WEBP"
+  );
+}
+
+function clampByte(n) {
+  if (n < 0) return 0;
+  if (n > 255) return 255;
+  return n | 0;
+}
+
+function toGrayscaleContrast(rgba, contrast = 1) {
+  const out = new Uint8ClampedArray(rgba.length);
+  for (let i = 0; i < rgba.length; i += 4) {
+    const lum = rgba[i] * 0.299 + rgba[i + 1] * 0.587 + rgba[i + 2] * 0.114;
+    const adjusted = clampByte((lum - 128) * contrast + 128);
+    out[i] = adjusted;
+    out[i + 1] = adjusted;
+    out[i + 2] = adjusted;
+    out[i + 3] = 255;
+  }
+  return out;
+}
+
+function toBinaryThreshold(rgba, threshold = 128) {
+  const out = new Uint8ClampedArray(rgba.length);
+  for (let i = 0; i < rgba.length; i += 4) {
+    const lum = rgba[i] * 0.299 + rgba[i + 1] * 0.587 + rgba[i + 2] * 0.114;
+    const value = lum < threshold ? 0 : 255;
+    out[i] = value;
+    out[i + 1] = value;
+    out[i + 2] = value;
+    out[i + 3] = 255;
+  }
+  return out;
+}
+
+function resizeNearest(rgba, width, height, scale) {
+  const outWidth = Math.max(1, Math.round(width * scale));
+  const outHeight = Math.max(1, Math.round(height * scale));
+  if (outWidth === width && outHeight === height) {
+    return { width, height, rgba };
+  }
+
+  const out = new Uint8ClampedArray(outWidth * outHeight * 4);
+  for (let y = 0; y < outHeight; y++) {
+    const srcY = Math.min(height - 1, Math.floor(y / scale));
+    for (let x = 0; x < outWidth; x++) {
+      const srcX = Math.min(width - 1, Math.floor(x / scale));
+      const srcI = (srcY * width + srcX) * 4;
+      const outI = (y * outWidth + x) * 4;
+      out[outI] = rgba[srcI];
+      out[outI + 1] = rgba[srcI + 1];
+      out[outI + 2] = rgba[srcI + 2];
+      out[outI + 3] = rgba[srcI + 3];
+    }
+  }
+
+  return { width: outWidth, height: outHeight, rgba: out };
+}
+
+function decodeWithJsQrVariants(rgba, width, height) {
+  const variants = [];
+  variants.push({ width, height, rgba });
+  variants.push({ width, height, rgba: toGrayscaleContrast(rgba, 1.4) });
+  variants.push({ width, height, rgba: toGrayscaleContrast(rgba, 1.9) });
+
+  for (const threshold of [112, 128, 144]) {
+    variants.push({ width, height, rgba: toBinaryThreshold(rgba, threshold) });
+  }
+
+  if (width * height <= 700 * 700) {
+    const upscaled = resizeNearest(rgba, width, height, 2);
+    variants.push(upscaled);
+    variants.push({ width: upscaled.width, height: upscaled.height, rgba: toGrayscaleContrast(upscaled.rgba, 1.4) });
+    variants.push({ width: upscaled.width, height: upscaled.height, rgba: toBinaryThreshold(upscaled.rgba, 128) });
+  }
+
+  const decodeOptions = [
+    { inversionAttempts: "attemptBoth" },
+    { inversionAttempts: "dontInvert" },
+    { inversionAttempts: "onlyInvert" },
+  ];
+
+  for (const variant of variants) {
+    for (const opts of decodeOptions) {
+      let decoded = null;
+      try {
+        decoded = jsQR(variant.rgba, variant.width, variant.height, opts);
+      } catch {
+        continue;
+      }
+      if (decoded?.binaryData?.length > 0) return decoded;
+    }
+  }
+
+  return null;
+}
+
 function bytesToLatin1String(bytes) {
   if (Buffer.isBuffer(bytes)) return bytes.toString("latin1");
   const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -61,6 +164,26 @@ async function decodeImageToRGBA_Node(buf) {
     width = jpg.width;
     height = jpg.height;
     rgba = jpg.data;
+  } else if (isWebp(buf)) {
+    try {
+      const { createCanvas, loadImage } = await import("canvas");
+      const img = await loadImage(buf);
+      const canvas = createCanvas(img.width, img.height);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      const imgData = ctx.getImageData(0, 0, img.width, img.height);
+      width = img.width;
+      height = img.height;
+      rgba = imgData.data;
+    } catch {
+      // Some canvas builds lack WEBP decode support; sharp provides a reliable fallback.
+      const sharpMod = await import("sharp");
+      const sharp = sharpMod.default;
+      const raw = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      width = raw.info.width;
+      height = raw.info.height;
+      rgba = raw.data;
+    }
   } else {
     throw new Error("Unsupported image format");
   }
@@ -74,17 +197,16 @@ async function scanQR(input) {
     let decoded;
     if (isBrowser) {
       const { width, height, rgba } = await decodeImageToRGBA_Browser(input);
-      decoded = jsQR(rgba, width, height);
+      decoded = decodeWithJsQrVariants(rgba, width, height);
     } else {
       const buf = Buffer.isBuffer(input) ? input : Buffer.from(await toUint8(input));
       const { width, height, rgba } = await decodeImageToRGBA_Node(buf);
-      decoded = jsQR(rgba, width, height);
+      decoded = decodeWithJsQrVariants(rgba, width, height);
     }
 
     if (!decoded) throw new Error("QR code not found");
     return Buffer.from(decoded.binaryData);
   } catch (e) {
-    console.log(e);
     return null;
   }
 }

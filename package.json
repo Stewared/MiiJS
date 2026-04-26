@@ -80,6 +80,7 @@
     "process": "^0.11.10",
     "qr-code-styling": "^1.9.2",
     "randombytes": "^2.1.0",
+    "sharp": "^0.34.4",
     "stream-browserify": "^3.0.0",
     "three": "^0.182.0",
     "url": "^0.11.4",
