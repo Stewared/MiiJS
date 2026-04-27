@@ -10,6 +10,17 @@ const ONE_BY_ONE_GIF =
   "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
 
 const isBrowser = typeof window !== "undefined" && typeof document !== "undefined";
+const importNodeOnlyModule = isBrowser
+  ? null
+  : new Function("specifier", "return import(specifier)");
+
+async function loadNodeOnlyModule(specifier) {
+  if (!importNodeOnlyModule) {
+    throw new Error(`${specifier} is unavailable in the browser build`);
+  }
+  // Keep Node-only image dependencies out of browser bundle graphs.
+  return importNodeOnlyModule(specifier);
+}
 
 function isWebp(buf) {
   return (
@@ -147,10 +158,10 @@ async function decodeImageToRGBA_Browser(bytesOrBlob) {
 // --- Node image decode: keep your existing PNG/JPEG path but load deps dynamically ---
 async function decodeImageToRGBA_Node(buf) {
   const [{ PNG }, jpeg, isPng, isJpg] = await Promise.all([
-    import("pngjs"),
-    import("jpeg-js"),
-    import("is-png"),
-    import("is-jpg"),
+    loadNodeOnlyModule("pngjs"),
+    loadNodeOnlyModule("jpeg-js"),
+    loadNodeOnlyModule("is-png"),
+    loadNodeOnlyModule("is-jpg"),
   ]);
 
   let width, height, rgba;
@@ -166,7 +177,7 @@ async function decodeImageToRGBA_Node(buf) {
     rgba = jpg.data;
   } else if (isWebp(buf)) {
     try {
-      const { createCanvas, loadImage } = await import("canvas");
+      const { createCanvas, loadImage } = await loadNodeOnlyModule("canvas");
       const img = await loadImage(buf);
       const canvas = createCanvas(img.width, img.height);
       const ctx = canvas.getContext("2d");
@@ -177,7 +188,7 @@ async function decodeImageToRGBA_Node(buf) {
       rgba = imgData.data;
     } catch {
       // Some canvas builds lack WEBP decode support; sharp provides a reliable fallback.
-      const sharpMod = await import("sharp");
+      const sharpMod = await loadNodeOnlyModule("sharp");
       const sharp = sharpMod.default;
       const raw = await sharp(buf).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
       width = raw.info.width;
@@ -299,8 +310,8 @@ async function makeQR(input, opts = {}) {
   };
 
   if (!isBrowser) {
-    const { JSDOM } = await import("jsdom");
-    const nodeCanvas = await import("canvas");
+    const { JSDOM } = await loadNodeOnlyModule("jsdom");
+    const nodeCanvas = await loadNodeOnlyModule("canvas");
     baseConfig.jsdom = JSDOM;
     baseConfig.nodeCanvas = nodeCanvas;
   }
@@ -364,7 +375,7 @@ async function makeQR(input, opts = {}) {
     return Buffer.from(new Uint8Array(await outBlob.arrayBuffer()));
   } else {
     // Node canvas compositing (your original logic)
-    const nodeCanvas = await import("canvas");
+    const nodeCanvas = await loadNodeOnlyModule("canvas");
     const { createCanvas, loadImage } = nodeCanvas;
 
     const canvas = createCanvas(size, size);

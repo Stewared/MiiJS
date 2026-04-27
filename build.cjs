@@ -192,7 +192,7 @@ const nodeShimPlugin = {
 
 
     // Anything that should never be bundled for browser:
-    for (const mod of ["jsdom","canvas","pngjs","jpeg-js","is-png","is-jpg","webgpu","fetch"]) {
+    for (const mod of ["jsdom","canvas","pngjs","jpeg-js","is-png","is-jpg","sharp","webgpu","fetch"]) {
       build.onResolve({ filter: new RegExp(`^${mod}$`) }, () => shim("shims/empty.js"));
     }
 
