@@ -137,6 +137,7 @@ async function makeMiiChild(parentA, parentB, options) {
 
         if(iStage<4){
             child.stages[iStage].face.type=9;//Extra technically, I'm fairly certain this still happens just in a different part than I directly researched
+            child.stages[iStage].eyebrows.color=7;
         }
 
         child.stages[iStage].general.height=Math.floor((child.stages[iStage].general.height/5)*iStage);//Extra, Tomodachi Life just uses alternate models and therefore no official height growth is in-game yet one is displayed, so I mocked up a basic growing up height. Newborn will always be the shortest, stage 5 will always be the actual height, and the values in between are just a range in between. We don't do the same for weight since Mii weights appear to be more of a representative of underweight or overweight for the height.
