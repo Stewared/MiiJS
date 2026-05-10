@@ -17,10 +17,10 @@ const CRC32_TABLE = (() => {
 
 const browserZipFiles = [
   {
-    source: './node_modules/ffl.js/examples/ffl-emscripten-single-file.js',
-    fallbackSource: './node_modules/ffl.js/examples/ffl-emscripten-single-file.cjs',
+    source: './node_modules/ffl.js/ffl-emscripten.cjs',
     zipName: 'fflModule.cjs'
   },
+  { source: './node_modules/ffl.js/ffl-emscripten.wasm' },
   { source: './miiMaleBody.glb' },
   { source: './miiFemaleBody.glb' },
   { source: './dist/miijs.browser.esm.js' },
