@@ -5,6 +5,113 @@ function getParentPermission(parent, permission) {
     return parent?.perms?.[permission] ?? true;
 }
 
+async function kidomatic(mii,hairGroupIndex=-1){
+    if(mii.fields){
+        mii=await mii.toJSON();
+    }
+    mii=await decodeMii(mii);
+
+    //Clear beards and wrinkles
+    mii.beard.type=0;
+    mii.beard.mustache.type=0;
+    mii.face.feature=0;
+    //For parity with the original, though I wouldn't be averse to making this a toggle to allow child Miis to generate with these
+    mii.face.makeup=0;
+    mii.glasses.type=0;
+    mii.hair.flipped=false;
+
+    //Child Miis generate the last stage, then build offsets backwards through the younger stages of life starting at the older stages
+    var eyeBase = Math.min(Math.max(mii.eyes.yPosition + 2, 0), 18);
+    let browBase = mii.eyebrows.yPosition + 2;
+    if (browBase > 15) {
+        browBase = 15;
+    }
+    else if (browBase < 0) {
+        browBase = 0;
+    }
+
+    var mouthBase = Math.min(Math.max(mii.mouth.yPosition - 2, 0), 18);
+
+    var eyeYDelta = mii.eyes.yPosition - eyeBase;
+    var browYDelta = mii.eyebrows.yPosition - browBase;
+    var mouthYDelta = mii.mouth.yPosition - mouthBase;
+
+    //Now we take the baselines above and translate them into the younger years
+    mii.stages = [];
+    for (var iStage = 0; iStage < 6; iStage++) {
+        mii.stages.push(structuredClone(mii));
+
+        mii.stages[iStage].eyes.yPosition=Math.floor((eyeYDelta * iStage)/5) + eyeBase;
+        mii.stages[iStage].eyebrows.yPosition=Math.floor((browYDelta * iStage)/5) + browBase;
+        mii.stages[iStage].mouth.yPosition=Math.floor((mouthYDelta * iStage)/5) + mouthBase;
+        mii.stages[iStage].nose.size=Math.floor((mii.nose.size * iStage)/5);
+
+        if(iStage<4){
+            mii.stages[iStage].face.type=9;//Extra technically, I'm fairly certain this still happens just in a different part than I directly researched
+            mii.stages[iStage].eyebrows.color=7;
+        }
+
+        mii.stages[iStage].general.height=Math.floor((mii.stages[iStage].general.height/5)*iStage);//Extra, Tomodachi Life just uses alternate models and therefore no official height growth is in-game yet one is displayed, so I mocked up a basic growing up height. Newborn will always be the shortest, stage 5 will always be the actual height, and the values in between are just a range in between. We don't do the same for weight since Mii weights appear to be more of a representative of underweight or overweight for the height.
+
+        delete mii.stages[iStage].stages;//Because we're just cloning the baseline object repeatedly to make the stages a little bit cleaner, we need to clear this on subsequent clones
+    }
+
+    var foundAgeGroup=-1;
+    if(hairGroupIndex<0||hairGroupIndex>9){//This selection code is for kidomatic'ing Miis that pre-exist, not for the baby generation flow.
+        var foundHairIndexes=[];
+        var foundAgeGroups=[];
+        var foundHair=false;
+        for(let iAgeGroup=3;iAgeGroup>=1&&!foundHair;iAgeGroup--){
+            for(let iHairGroup=mii.general.gender===0?0:4;iHairGroup<=(mii.general.gender===0?3:9);iHairGroup++){
+                if(childGenTables.hairStyleGroups[iHairGroup][iAgeGroup].includes(mii.hair.type)){
+                    foundHairIndexes.push(iHairGroup);
+                    foundAgeGroups.push(iAgeGroup);
+                    foundHair=true;
+                }
+            }
+        }
+
+        if(foundHairIndexes.length>0){
+            let rand=Math.floor(Math.random()*foundHairIndexes.length);
+            hairGroupIndex=foundHairIndexes[rand];
+            foundAgeGroup=foundAgeGroups[rand];
+        }
+        else{
+            hairGroupIndex=childGenTables.hairStyleGroupMappings[mii.hair.type][mii.general.gender];
+            foundAgeGroup=-2;
+        }
+    }
+
+    //Basically there's a random chance for a hairstyle to not advance throughout the years, so it's possible to end up with a hairstyle from a younger stage. This is slightly more likely for boys than girls.
+    let ageGroup = 0;
+    for (let iHairStage = 0; iHairStage < 4; iHairStage++) {
+        if(iHairStage==3&&foundAgeGroup!=-1) break;//If it's not -1, then it's for kidomatic'ing a pre-existing Mii and not from the baby Mii creation flow, therefore the last hair style needs to remain what the Mii already has.
+        const subgroup = childGenTables.hairStyleGroups[hairGroupIndex][ageGroup];
+        const hairType = subgroup[Math.floor(Math.random() * subgroup.length)];
+        switch(iHairStage){
+            case 0:
+                mii.stages[0].hair.type = hairType;
+            break;
+            case 1:
+                mii.stages[1].hair.type = hairType;
+                mii.stages[2].hair.type = hairType;
+            break;
+            case 2:
+                mii.stages[3].hair.type = hairType;
+                mii.stages[4].hair.type = hairType;
+            break;
+            case 3:
+                mii.stages[5].hair.type = hairType;
+            break;
+        }
+        if (iHairStage === 0 || Math.floor(Math.random() * (mii.stages[0].general.gender === 0 ? 3 : 4)) !== 0) {//For each stage of life there is a 33% chance for boys, and a 25% chance for girls, of staying on the same hairstyle as they had already. However, they are guaranteed to never have the same hairstyle stage as their newborn stage.
+            ageGroup = Math.min(ageGroup + 1, foundAgeGroup<0?3:foundAgeGroup);
+        }
+    }
+
+    return mii.stages;
+}
+
 async function makeMiiChild(parentA, parentB, options) {
     let parent0,parent1;
     if(parentA.fields){
@@ -37,21 +144,12 @@ async function makeMiiChild(parentA, parentB, options) {
     var mainParent = randomBools[0] === 1 ? parent1 : parent0;
     var child = structuredClone(mainParent);//We have to clear some defaults doing it this way, but so much of the Mii gen is from this parent it's just cleaner to gen this way.
 
-    //Clear beards and wrinkles
-    child.beard.type=0;
-    child.beard.mustache.type=0;
-    child.face.feature=0;
-
     //These aren't technically TL sourced but I think this is more fun/functional and doesn't change output really
     child.meta.type=(parent0.meta?.type==="Special"||parent1.meta?.type==="Special")?"Special":"Default";
     if(!child.perms) child.perms={};
     child.perms.sharing=getParentPermission(parent0,"sharing")&&getParentPermission(parent1,"sharing");
     child.perms.copying=getParentPermission(parent0,"copying")&&getParentPermission(parent1,"copying");
 
-    //For parity with the original, though I wouldn't be averse to making an options toggle to let these generate anyway.
-    child.face.makeup=0;
-    child.glasses.type=0;
-    child.hair.flipped=false;
 
     var birthday=new Date();
     child.general.birthday=birthday.getDate();
@@ -93,22 +191,6 @@ async function makeMiiChild(parentA, parentB, options) {
 
     child.mole.on = Math.floor(Math.random() * 2) === 0 ? parent0.mole.on : parent1.mole.on;
 
-    //Child Miis generate the last stage, then build offsets backwards through the younger stages of life starting at the older stages
-    var eyeBase = Math.min(Math.max(child.eyes.yPosition + 2, 0), 18);
-    let browBase = child.eyebrows.yPosition + 2;
-    if (browBase > 15) {
-        browBase = 15;
-    }
-    else if (browBase < 0) {
-        browBase = 0;
-    }
-
-    var mouthBase = Math.min(Math.max(child.mouth.yPosition - 2, 0), 18);
-
-    var eyeYDelta = child.eyes.yPosition - eyeBase;
-    var browYDelta = child.eyebrows.yPosition - browBase;
-    var mouthYDelta = child.mouth.yPosition - mouthBase;
-
     //This should be a 1:1 of final stage height and weight generation
     var heightParent = Math.floor(Math.random() * 2) === 0 ? parent0 : parent1;
     var height = (heightParent.general.height >> 3) * 1.4;
@@ -125,52 +207,10 @@ async function makeMiiChild(parentA, parentB, options) {
 
     child.general.favoriteColor=options?.favoriteColor?options.favoriteColor:(child.general.gender==0?[2,3,5,6]:[0,1,7,8])[Math.floor(Math.random()*4)];//We're not running personality generation here, so we're just making a random color of the personality groups the child had available so as to add some variety to the colors
 
-    //Now we take the baselines above and translate them into the younger years
-    child.stages = [];
-    for (var iStage = 0; iStage < 6; iStage++) {
-        child.stages.push(structuredClone(child));
-
-        child.stages[iStage].eyes.yPosition=Math.floor((eyeYDelta * iStage)/5) + eyeBase;
-        child.stages[iStage].eyebrows.yPosition=Math.floor((browYDelta * iStage)/5) + browBase;
-        child.stages[iStage].mouth.yPosition=Math.floor((mouthYDelta * iStage)/5) + mouthBase;
-        child.stages[iStage].nose.size=Math.floor((child.nose.size * iStage)/5);
-
-        if(iStage<4){
-            child.stages[iStage].face.type=9;//Extra technically, I'm fairly certain this still happens just in a different part than I directly researched
-        }
-
-        child.stages[iStage].general.height=Math.floor((child.stages[iStage].general.height/5)*iStage);//Extra, Tomodachi Life just uses alternate models and therefore no official height growth is in-game yet one is displayed, so I mocked up a basic growing up height. Newborn will always be the shortest, stage 5 will always be the actual height, and the values in between are just a range in between. We don't do the same for weight since Mii weights appear to be more of a representative of underweight or overweight for the height.
-
-        delete child.stages[iStage].stages;//Because we're just cloning the baseline object repeatedly to make the stages a little bit cleaner, we need to clear this on subsequent clones
-    }
-
-    //Basically there's a random chance for a hairstyle to not advance throughout the years, so it's possible to end up with a hairstyle from a younger stage. This is slightly more likely for boys than girls.
-    let ageGroup = 0;
-    for (let iHairStage = 0; iHairStage < 4; iHairStage++) {
-        const subgroup = childGenTables.hairStyleGroups[hairGroupIndex][ageGroup];
-        const hairType = subgroup[Math.floor(Math.random() * subgroup.length)];
-        switch(iHairStage){
-            case 0:
-                child.stages[0].hair.type = hairType;
-            break;
-            case 1:
-                child.stages[1].hair.type = hairType;
-                child.stages[2].hair.type = hairType;
-            break;
-            case 2:
-                child.stages[3].hair.type = hairType;
-                child.stages[4].hair.type = hairType;
-            break;
-            case 3:
-                child.stages[5].hair.type = hairType;
-            break;
-        }
-        if (iHairStage === 0 || Math.floor(Math.random() * (child.stages[0].general.gender === 0 ? 3 : 4)) !== 0) {//For each stage of life there is a 33% chance for boys, and a 25% chance for girls, of staying on the same hairstyle as they had already. However, they are guaranteed to never have the same hairstyle stage as their newborn stage.
-            ageGroup = Math.min(ageGroup + 1, 3);
-        }
-    }
-    return child.stages;
+    const childStages=await kidomatic(child,hairGroupIndex);
+    return childStages;
 }
 export {
+    kidomatic,
     makeMiiChild
 }

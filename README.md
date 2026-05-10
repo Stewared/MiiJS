@@ -33,7 +33,7 @@ You only need to build if developing local changes for CJS and/or the Browser, i
 ## Example Usage
 ```js
 import fs from "fs";
-import {Mii, ConsoleFormats, MiiFormats, makeMiiChild, miiHeightToMeasurements, miiWeightToMeasurements, imperialHeightWeightToMiiWeight, centimetersToMiiHeight} from "miijs";
+import {Mii, ConsoleFormats, MiiFormats, makeMiiChild, kidomatic, miiHeightToMeasurements, miiWeightToMeasurements, imperialHeightWeightToMiiWeight, centimetersToMiiHeight} from "miijs";
 
 //Manipulation
 let JohnDoe = await Mii.create("./JohnDoe.charinfo");//Initialize JohnDoe.charinfo from the FS into the Mii class
@@ -65,10 +65,15 @@ exampleAmiibo = JohnDoe.insertIntoAmiibo(exampleAmiibo);//Insert into the Amiibo
 fs.writeFileSync(`./JohnOnAmiibo.ntag`,exampleAmiibo);//Write a new Amiibo file back
 
 //Other Functions
+//Kidomatic
+const kidStages = await kidomatic(JohnDoe);//Returns an array with six stages of life represented as raw JSON for the provided Mii.
+let toddlerJohn = await Mii.create(kidStages[1]);
+console.log(toddlerJohn.fields.meta.name);
+
 //Baby
-const child = makeMiiChild(miiOnAmiibo, JohnDoe);//Returns an array with six stages of life represented as raw JSON for the generated baby.
-let newborn = Mii.create(child[0]);
-let fullGrown = Mii.create(child[5]);
+const child = await makeMiiChild(miiOnAmiibo, JohnDoe);//Returns an array with six stages of life represented as raw JSON for the generated baby.
+let newborn = await Mii.create(child[0]);
+let fullGrown = await Mii.create(child[5]);
 console.log(fullGrown.fields.meta.name);
 
 // Height/Weight Conversion
@@ -112,8 +117,10 @@ Debug values enable extra logging to help figure out why something is breaking a
 - ConsoleFormats | See enums
 - mappings | The mappings for friendly name to JSON path
 - defaultMappings | The default values we use if you encode a Mii to a format that needs a field the format it's coming from didn't have
-- makeMiiChild(mii1, mii2, options) | Provide two Miis to this function, this function presents an array of six JSON objects representing a potential child at all stages of life in the style of Tomodachi Life
+- async makeMiiChild(mii1, mii2, options) | Provide two Miis to this function, this function presents an array of six JSON objects representing a potential child at all stages of life in the style of Tomodachi Life
     - Options values include, name: Mii name to result in, creatorName: Output creatorName result, gender: Gender of the child (0 Male, 1 Female, same as in the Mii code that all Miis output), favoriteColor: The output child's favorite color
+- async kidomatic(mii, hairGroupIndex) | Provide one Mii to this function, this function presents an array of six JSON objects representing that Mii at all stages of childhood in the style of Tomodachi Life
+    - hairGroupIndex is optional, and recommended to omit without a specific usecase. If omitted or negative, kidomatic will infer an appropriate child hairstyle group from the Mii's current hair type and gender.
 - decryptMii(miiBuffer) | Decrypts the Mii from the QR code format
 - encryptMii(miiBuffer) | Encrypts the Mii to the QR code format
 - makeInstructions(mii, console) | See Mii.toInstructions
