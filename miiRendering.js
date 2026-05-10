@@ -34,8 +34,8 @@ async function encodePngImage(width, height, bgraPixels) {
     return PNG.sync.write(png);
 }
 
-function normalizeDecodedMiiForRender(data) {
-    const normalized = structuredClone(processMii.decodeMii(data));
+async function normalizeDecodedMiiForRender(data) {
+    const normalized = structuredClone(await processMii.decodeMii(data));
 
     // FFL's current local render path still expects legacy Wii U-era glasses
     // indices, so backport canonical values before rendering.
@@ -72,16 +72,49 @@ async function getWebGPU() {
 async function addWebGPUExtensions(obj = globalThis) {
     // @ts-ignore -- Incomplete dummy type.
     obj.VideoFrame ??= (class VideoFrame { });
-    if (obj.navigator) {
-        return; // Skip the following below if in a browser.
+    const selfValue = obj.self ?? obj;
+    obj.self ??= selfValue;
+    selfValue.VideoFrame ??= obj.VideoFrame;
+    selfValue.requestAnimationFrame ??= function requestAnimationFrame() { };
+    selfValue.cancelAnimationFrame ??= function cancelAnimationFrame() { };
+
+    const syncSelfWebGPUGlobals = (globals = obj) => {
+        for (const key of Object.getOwnPropertyNames(globals)) {
+            if (key.startsWith("GPU") && globals[key] !== undefined) {
+                selfValue[key] ??= globals[key];
+            }
+        }
+    };
+
+    if (obj.navigator?.gpu) {
+        syncSelfWebGPUGlobals();
+        return;
     }
+
     const { globals, create } = await getWebGPU();
     Object.assign(obj, globals); // Merge WebGPU globals.
+    Object.assign(selfValue, globals);
+    syncSelfWebGPUGlobals(globals);
+
     // @ts-ignore -- Incomplete navigator type.
-    obj.navigator = {
+    const navigatorValue = {
+        ...(obj.navigator ?? {}),
         gpu: create([]),
-        userAgent: '' // THREE.GLTFLoader accesses this.
+        userAgent: obj.navigator?.userAgent ?? '' // THREE.GLTFLoader accesses this.
     };
+
+    try {
+        obj.navigator = navigatorValue;
+        if (obj.navigator?.gpu !== navigatorValue.gpu) {
+            throw new Error("navigator assignment was ignored");
+        }
+    }
+    catch {
+        Object.defineProperty(obj, "navigator", {
+            configurable: true,
+            value: navigatorValue
+        });
+    }
 }
 
 /**
@@ -214,6 +247,13 @@ async function loadGLTFFromFS(path) {
         );
     });
 }
+async function loadFirstGLTFFromFS(paths) {
+    for (const path of paths) {
+        const gltf = await loadGLTFFromFS(path);
+        if (gltf) return gltf;
+    }
+    return null;
+}
 async function loadGLTFFromURL(url) {
     const res = await fetch(url);
     if (!res.ok) return null;
@@ -236,6 +276,7 @@ var isInitialised = (async () => {//Yes, ESM has top level await, however we als
     if (isNode) {
         var fetchMod = await import("fetch");
         globalThis.fetch = globalThis.fetch ?? (fetchMod.default ?? fetchMod.fetch ?? fetchMod);
+        await addWebGPUExtensions();
     }
 
     const threeBase = await import('three');
@@ -276,8 +317,18 @@ var isInitialised = (async () => {//Yes, ESM has top level await, however we als
 
     if (isNode) {
         bodyTemplates = [
-            await loadGLTFFromFS("./node_modules/miijs/miiMaleBody.glb"),
-            await loadGLTFFromFS("./node_modules/miijs/miiFemaleBody.glb")
+            await loadFirstGLTFFromFS([
+                "./miiMaleBody.glb",
+                "../miiMaleBody.glb",
+                "./node_modules/miijs/miiMaleBody.glb",
+                "../node_modules/miijs/miiMaleBody.glb"
+            ]),
+            await loadFirstGLTFFromFS([
+                "./miiFemaleBody.glb",
+                "../miiFemaleBody.glb",
+                "./node_modules/miijs/miiFemaleBody.glb",
+                "../node_modules/miijs/miiFemaleBody.glb"
+            ])
         ];
     }
     else {
@@ -497,7 +548,7 @@ async function renderRequestToImage(renderer, ffl, request, opts = {}) {
 async function renderForNode(data, opts = {}) {
     await isInitialised;
     //We need some info from the buffer, and we also need to make sure it's in MNMS
-    data = normalizeDecodedMiiForRender(data);
+    data = await normalizeDecodedMiiForRender(data);
 
     var pantsColor = 0;
     if (data?.meta?.type?.toLowerCase() === "special") {
@@ -593,7 +644,7 @@ async function renderForNode(data, opts = {}) {
 async function renderForBrowser(data, opts = {}) {
     await isInitialised;
 
-    data = normalizeDecodedMiiForRender(data);
+    data = await normalizeDecodedMiiForRender(data);
 
     var pantsColor = 0;
     if (data?.meta?.type?.toLowerCase() === "special") {

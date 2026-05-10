@@ -664,6 +664,9 @@ function makeInstructions(mii, type = "SWITCH") {
         throw new Error(`${type} is not a valid type, expected one of ${Object.keys(ConsoleFormats).join(", ")}.`);
     }
     mii = decodeMii(mii);
+    if (mii && typeof mii.then === "function") {
+        return mii.then(decoded => makeInstructions(decoded, type));
+    }
 
     if (type !== "SWITCH") {
         mii = backPort(mii, type);

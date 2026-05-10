@@ -23,10 +23,6 @@ const browserZipFiles = [
   { source: './node_modules/ffl.js/ffl-emscripten.wasm' },
   { source: './miiMaleBody.glb' },
   { source: './miiFemaleBody.glb' },
-  { source: './dist/miijs.browser.esm.js' },
-  { source: './dist/miijs.browser.esm.js.map' },
-  { source: './dist/miijs.browser.js' },
-  { source: './dist/miijs.browser.js.map' },
   { source: './README.md' },
   { source: './silhouette0.png' },
   { source: './silhouette1.png' }
@@ -139,7 +135,26 @@ function createZip(entries, outputPath) {
 
 function createBrowserBuildZip() {
   const zipOutputPath = path.resolve(__dirname, './browserBuild.zip');
-  const entries = browserZipFiles.map(({ source, fallbackSource, zipName }) => {
+  const browserBuildOutputs = [
+    './dist/miijs.browser.esm.js',
+    './dist/miijs.browser.esm.js.map',
+    './dist/miijs.browser.js',
+    './dist/miijs.browser.js.map'
+  ];
+  const chunksDir = path.resolve(__dirname, './dist/chunks');
+  if (fs.existsSync(chunksDir)) {
+    for (const chunkName of fs.readdirSync(chunksDir)) {
+      browserBuildOutputs.push(`./dist/chunks/${chunkName}`);
+    }
+  }
+
+  const entries = [
+    ...browserZipFiles,
+    ...browserBuildOutputs.map(source => ({
+      source,
+      zipName: source.includes('/chunks/') ? `chunks/${path.basename(source)}` : undefined
+    }))
+  ].map(({ source, fallbackSource, zipName }) => {
     const primaryPath = path.resolve(__dirname, source);
     const fallbackPath = fallbackSource ? path.resolve(__dirname, fallbackSource) : null;
     const sourcePath = fs.existsSync(primaryPath)
@@ -211,7 +226,10 @@ const buildOptions = {
     entryPoints: ['./index.js'],
     bundle: true,
     globalName: 'MiiJS',
-    outfile: './dist/miijs.browser.js',
+    outdir: './dist',
+    entryNames: 'miijs.browser',
+    chunkNames: 'chunks/[name]-[hash]',
+    splitting: true,
     format: 'esm',
     platform: 'browser',
     target: ['es2022'],
@@ -231,7 +249,7 @@ const buildOptions = {
 // Also build an ESM version
 const esmBuildOptions = {
     ...buildOptions,
-    outfile: './dist/miijs.browser.esm.js',
+    entryNames: 'miijs.browser.esm',
     format: 'esm',
     globalName: undefined
 };
@@ -261,6 +279,7 @@ async function build() {
         if (!fs.existsSync('./dist')) {
             fs.mkdirSync('./dist');
         }
+        fs.rmSync(path.resolve(__dirname, './dist/chunks'), { recursive: true, force: true });
 
         // Build IIFE version
         await esbuild.build(buildOptions);

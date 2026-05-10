@@ -40,20 +40,20 @@ let JohnDoe = await Mii.create("./JohnDoe.charinfo");//Initialize JohnDoe.charin
 JohnDoe.fields.meta.type="Special";//Modify fields as necessary
 JohnDoe.set("name","Johnny");//Modify fields by friendly human name
 JohnDoe.set({meta:{creatorName:"John Sr."}});//Modify fields by an object
-JohnDoe.setAs(ConsoleFormats["3DS"],"hair.type",[9,1,2]);//Set the hairstyle to the one that is, if you were on 3DS (or Wii U), on the 9th page, 1 from the left, 2 from the top. For non paginated values, only two values are necessary. Friendly human names also available.
-JohnDoe.getAs(ConsoleFormats.WII,"hair.type");//Return the friendly name as if viewing from a Wii, same as setAs. Friendly human names also available.
+await JohnDoe.setAs(ConsoleFormats["3DS"],"hair.type",[9,1,2]);//Set the hairstyle to the one that is, if you were on 3DS (or Wii U), on the 9th page, 1 from the left, 2 from the top. For non paginated values, only two values are necessary. Friendly human names also available.
+await JohnDoe.getAs(ConsoleFormats.WII,"hair.type");//Return the friendly name as if viewing from a Wii, same as setAs. Friendly human names also available.
 
 //Writing
 fs.writeFileSync("./JohnDoe.rsd", JohnDoe.encode(MiiFormats.RSD));//Backport and write a Wii file for use on Wiimotes (.mii is the widely known name, but not advised for use)
 fs.writeFileSync("./John.json",JSON.stringify(JohnDoe.toJSON(),null,4));//Write the representation of fields MiiJS is using for JohnDoe to a JSON file
 console.log(JohnDoe);//Mii.toString() will automatically encode as an MNMS/Studio Code string, you can call JohnDoe.toString(MiiFormats.FORMAT) to get a hex string for a different format
-const JohnImg = JohnDoe.render();//Return a buffer containing an image of the Mii
+const JohnImg = await JohnDoe.render();//Return a buffer containing an image of the Mii
 fs.writeFileSync(`./JohnnysFace.png`,JohnImg);
-const JohnQR = johnDoe.toQR();//Return a buffer containing an image of the Mii QR.
+const JohnQR = await JohnDoe.toQR();//Return a buffer containing an image of the Mii QR.
 fs.writeFileSync(`./JohhnysQR.png`,JohnQR);
 
 //Instruction Generation
-const instrs=JohnDoe.toInstructions(ConsoleFormats.DS);//Make a JSON object of the Mii, with human friendly instructions to recreate on that console, backporting if necessary (DS editor in this case is treated as Tomodachi Collection)
+const instrs=await JohnDoe.toInstructions(ConsoleFormats.DS);//Make a JSON object of the Mii, with human friendly instructions to recreate on that console, backporting if necessary (DS editor in this case is treated as Tomodachi Collection)
 console.log(instrs.hair.type);//Human friendly text for how to find the hair type, in this case, on the DS editor
 fs.writeFileSync("./JohnInstrs.txt",JSON.stringify(instrs,null,4));//Write a file with the JSON instructions
 fs.writeFileSync("./JohnInstrs.json",JSON.stringify(instrs,null,4));
@@ -61,7 +61,7 @@ fs.writeFileSync("./JohnInstrs.json",JSON.stringify(instrs,null,4));
 //Amiibo Manipulation
 let exampleAmiibo = fs.readFileSync("./Amiibo.ntag");
 let miiOnAmiibo = await Mii.create(exampleAmiibo);//Automatically detect as Amiibo and extract Mii from it
-exampleAmiibo = JohnDoe.insertIntoAmiibo(exampleAmiibo);//Insert into the Amiibo, return the buffer
+exampleAmiibo = await JohnDoe.insertIntoAmiibo(exampleAmiibo);//Insert into the Amiibo, return the buffer
 fs.writeFileSync(`./JohnOnAmiibo.ntag`,exampleAmiibo);//Write a new Amiibo file back
 
 //Other Functions
@@ -77,10 +77,10 @@ let fullGrown = await Mii.create(child[5]);
 console.log(fullGrown.fields.meta.name);
 
 // Height/Weight Conversion
-console.log(miiHeightToMeasurements(JohnDoe.fields.general.height).totalInches);//Returns a JSON object with various human measurements (imperial, metric) converted from Mii measurements
-console.log(miiWeightToMeasurements(JohnDoe.fields.general.height).pounds);
-JohnDoe.set("weight", imperialHeightWeightToMiiWeight(70, 150));//Set JohnDoe's Weight to a good Mii weight for a person who's 5'10" (70 inches), and 150lbs (metric version also available).
-JohnDoe.set("height", centimetersToMiiHeight(175));//Set JohnDoe's Height to a good Mii height for a person who's 175cm (imperial version also available).
+console.log((await miiHeightToMeasurements(JohnDoe.fields.general.height)).totalInches);//Returns a JSON object with various human measurements (imperial, metric) converted from Mii measurements
+console.log((await miiWeightToMeasurements(JohnDoe.fields.general.height)).pounds);
+JohnDoe.set("weight", await imperialHeightWeightToMiiWeight(70, 150));//Set JohnDoe's Weight to a good Mii weight for a person who's 5'10" (70 inches), and 150lbs (metric version also available).
+JohnDoe.set("height", await centimetersToMiiHeight(175));//Set JohnDoe's Height to a good Mii height for a person who's 175cm (imperial version also available).
 ```
 
 ### Enums
@@ -102,17 +102,17 @@ Debug values enable extra logging to help figure out why something is breaking a
     - Mii.toJSON() | Returns Mii.fields
     - Mii.set(objOrPath, value) | Mii.set({meta:{name:"RickAstley"}}), and Mii.set("name", "RickAstley"), and Mii.set("meta.name", "RickAstley") will all do the same thing
     - Mii.get(path) | Returns the value
-    - Mii.setAs(console, path, value) | Set as if selecting an item on that console's Mii Maker, value is [page, countFromTheLeft, countFromTheTop], or [countFromTheLeft, countFromTheTop]
-    - Mii.getAs(console, path) | Get the value as if seeing the item on that console's Mii Maker, see setAs for what value returns
-    - Mii.encode(format) | Encodes the Mii to that binary format
+    - async Mii.setAs(console, path, value) | Set as if selecting an item on that console's Mii Maker, value is [page, countFromTheLeft, countFromTheTop], or [countFromTheLeft, countFromTheTop]
+    - async Mii.getAs(console, path) | Get the value as if seeing the item on that console's Mii Maker, see setAs for what value returns
+    - Mii.encode(format) | Encodes the Mii to that binary format. Returns a Promise only for optional async encoders such as encrypted QR formats.
     - async Mii.toQR(options) | Returns a buffer containing a QR code for that Mii, scannable by the 3DS or Wii U. Renders the Mii as an icon for the QR if FFLResHigh.dat is present.
         - Options values include, size: resolution, image: icon to use, noRenderMii: set to true to not render the Mii icon, label: label text to use instead of the Mii name. Additional passthrough options from [qr-code-styling](https://github.com/kozakdenys/qr-code-styling): qrOptions, dotsOptions, cornersSquareOptions, cornersDotsOptions, backgroundOptions. See Mii.render for more available options.
     - async Mii.render(fullBodyRender, options) | Returns a buffer containing a render of that Mii, IF FFLResHigh.dat is in the project directory
         - Options values include, fullBody: Render the full body of the Mii instead of just the head, expression: FFLExpression, size: size of the image. bodyPath: Path to use for the body models instead of the default. fflResBuffer: A buffer containing the FFL Resource. fflResPath: A path to the location of the FFL Resource.
-    - Mii.insertIntoAmiibo(amiiboDump) | Provide a buffer containing the Amiibo exactly as it is on the tag, this function returns the same Amiibo with your Mii inserted
-    - Mii.toInstructions(console) | Provides a JSON object containing human readable sentences and directions to recreate the Mii on that console
-- insertMiiIntoAmiibo(amiiboDump, mii) | See Mii.insertIntoAmiibo
-- extractMiiFromAmiibo(amiiboDump) | Returns the Mii binary from inside the Amiibo, can then be decoded using any of the provided decode functions
+    - async Mii.insertIntoAmiibo(amiiboDump) | Provide a buffer containing the Amiibo exactly as it is on the tag, this function returns the same Amiibo with your Mii inserted
+    - async Mii.toInstructions(console) | Provides a JSON object containing human readable sentences and directions to recreate the Mii on that console
+- async insertMiiIntoAmiibo(amiiboDump, mii) | See Mii.insertIntoAmiibo
+- async extractMiiFromAmiibo(amiiboDump) | Returns the Mii binary from inside the Amiibo, can then be decoded using any of the provided decode functions
 - MiiFormats | See enums
 - ConsoleFormats | See enums
 - mappings | The mappings for friendly name to JSON path
@@ -121,22 +121,22 @@ Debug values enable extra logging to help figure out why something is breaking a
     - Options values include, name: Mii name to result in, creatorName: Output creatorName result, gender: Gender of the child (0 Male, 1 Female, same as in the Mii code that all Miis output), favoriteColor: The output child's favorite color
 - async kidomatic(mii, hairGroupIndex) | Provide one Mii to this function, this function presents an array of six JSON objects representing that Mii at all stages of childhood in the style of Tomodachi Life
     - hairGroupIndex is optional, and recommended to omit without a specific usecase. If omitted or negative, kidomatic will infer an appropriate child hairstyle group from the Mii's current hair type and gender.
-- decryptMii(miiBuffer) | Decrypts the Mii from the QR code format
-- encryptMii(miiBuffer) | Encrypts the Mii to the QR code format
-- makeInstructions(mii, console) | See Mii.toInstructions
-- getAs(mii, console, path) | See Mii.getAs
-- setAs(mii, console, path, value) | See Mii.setAs
-- miiHeightToMeasurements(miiHeight) | Input a Mii's height (from 0-127), outputs { totalInches, inches, feet, centimeters }
-- miiHeightWeightToMeasurements(miiHeight, miiWeight) | Input a Mii's height, and a Mii's weight (values from 0-127), outputs {pounds,kilograms}
-- inchesToMiiHeight(totalInches) | Provide the total inches, outputs the Mii height
-- centimetersToMiiHeight(totalCentimeters) | Provide the total centimeters, outputs the Mii height
-- imperialHeightWeightToMiiWeight(totalInches, totalPounds) | Provide the total inches, and the total pounds, outputs the Mii Weight
-- metricHeightWeightToMiiWeight(totalCentimeters, totalKilograms) | Provide the total centimeters, and the total kilograms, outputs the Mii Weight
+- async decryptMii(miiBuffer) | Decrypts the Mii from the QR code format
+- async encryptMii(miiBuffer) | Encrypts the Mii to the QR code format
+- async makeInstructions(mii, console) | See Mii.toInstructions
+- async getAs(mii, console, path) | See Mii.getAs
+- async setAs(mii, console, path, value) | See Mii.setAs
+- async miiHeightToMeasurements(miiHeight) | Input a Mii's height (from 0-127), outputs { totalInches, inches, feet, centimeters }
+- async miiWeightToMeasurements(miiHeight, miiWeight) | Input a Mii's height, and a Mii's weight (values from 0-127), outputs {pounds,kilograms}
+- async inchesToMiiHeight(totalInches) | Provide the total inches, outputs the Mii height
+- async centimetersToMiiHeight(totalCentimeters) | Provide the total centimeters, outputs the Mii height
+- async imperialHeightWeightToMiiWeight(totalInches, totalPounds) | Provide the total inches, and the total pounds, outputs the Mii Weight
+- async metricHeightWeightToMiiWeight(totalCentimeters, totalKilograms) | Provide the total centimeters, and the total kilograms, outputs the Mii Weight
 - isMiiInFormat(miiBuffer, format) | Checks if the buffer is in the specified format, returns true or false
 - detectMiiFormat(miiBuffer, debug) | Returns an array of MiiFormats this Mii could be in. If we have a structure defined for it, it will validate if each individual value is within the boundaries for that value for that format.
-- decodeMii(miiOfAnyKnownWayOfRepresentingIt, debug) | See Mii.create
-- encodeMii(MiiClassOrJSON, format) | See Mii.encode
-- renderMii(mii, options) | See Mii.render
+- decodeMii(miiOfAnyKnownWayOfRepresentingIt, debug) | See Mii.create. Returns a Promise only for optional async decoders such as image QR, encrypted QR, or Amiibo data.
+- encodeMii(MiiClassOrJSON, format) | See Mii.encode. Returns a Promise only for optional async encoders such as encrypted QR formats.
+- async renderMii(mii, options) | See Mii.render
 - FFLExpression | See enums
 - scanQR(buffer) | Provide a buffer containing a QR code, returns the buffer the QR code represents.
 - async makeQR(buffer, options) | Provide a buffer, this outputs a QR code with that buffer. If the buffer is a recognized Mii, and FFLResHigh.dat is present, this will be rendered as an icon for the QR. See Mii.toQR for options.
@@ -215,7 +215,7 @@ These formats are decodable and encodeable but not recommended as a file extensi
 ## Other Useful Tools to Use with MiiJS
 Each of these is personally used and vetted by at least one of the library authors.
 - Our own [WiimoteBridge](https://github.com/Stewared/WiimoteBridge) is a tool we've been developing designed to make connecting a Wiimote to your device for purposes such as transferring Miis on and off of your Wii much easier.
-- [WDML Mii Transfer](https://sourceforge.net/projects/wdml/) is a tool for Windows devices to transfer Miis on and off the Wiimote
+- [InfiniMii's Wiimote Tools Page](https://infinimii.com/wiimote) is a tool for Chromium browsers to transfer Miis on and off the Wiimote
 - [Tagmo](https://play.google.com/store/apps/details?id=com.hiddenramblings.tagmo.eightbit) for Android is good for transferring the file on and off of your Amiibo. There are iPhone equivalents, but none we feel comfortable recommending at this time due to predatory subscription or microtransaction models.
 - [Nintendo's Mii Studio](https://accounts.nintendo.com/mii_studio) is the only official online Mii Maker and is accessible to anyone with a Nintendo Account. (Must already be logged into [Nintendo's online portal](https://accounts.nintendo.com/) to access the Mii Studio link)
 - [HEYimHeroic](https://github.com/HEYimHeroic)'s [Mii Studio Mii Loader](https://github.com/HEYimHeroic/MiiStudioMiiLoader) browser extension lets you import and export Miis from Mii Studio easily.

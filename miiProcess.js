@@ -1,6 +1,3 @@
-import isPng from 'is-png';
-import isJpg from 'is-jpg';
-
 import { formats, mappings, defaultMappings, forwardPort, backPort } from "./formats.js";
 import { lookupTables } from "./data.js";
 
@@ -14,6 +11,29 @@ function isWebp(buf) {
         && buf.length >= 12
         && buf.toString("ascii", 0, 4) === "RIFF"
         && buf.toString("ascii", 8, 12) === "WEBP"
+    );
+}
+function isPng(buf) {
+    return (
+        Buffer.isBuffer(buf)
+        && buf.length >= 8
+        && buf[0] === 0x89
+        && buf[1] === 0x50
+        && buf[2] === 0x4E
+        && buf[3] === 0x47
+        && buf[4] === 0x0D
+        && buf[5] === 0x0A
+        && buf[6] === 0x1A
+        && buf[7] === 0x0A
+    );
+}
+function isJpg(buf) {
+    return (
+        Buffer.isBuffer(buf)
+        && buf.length >= 3
+        && buf[0] === 0xFF
+        && buf[1] === 0xD8
+        && buf[2] === 0xFF
     );
 }
 
@@ -84,6 +104,10 @@ function ensureBuffer(buf, debug) {
     out = isBuffer(out);
     return out ? out : false;
 }
+function isPromiseLike(value) {
+    return value && typeof value.then === "function";
+}
+
 function bytesFromHex(hex) {
     if (typeof Buffer !== "undefined" && Buffer.from) return Buffer.from(hex, "hex");
     const out = new Uint8Array(hex.length / 2);
@@ -357,6 +381,12 @@ function decodeMii(toDecode, debug) {
     var miiType = detectMiiFormat(toDecode);
     if (miiType.includes("png") || miiType.includes("jpg") || miiType.includes("webp")) {
         toDecode = scanQR(toDecode);
+        if (isPromiseLike(toDecode)) {
+            return toDecode.then(scanned => {
+                if (scanned === null) throw new Error(`Detected an image QR format (PNG/JPG/WEBP), but couldn't decode the QR code!`);
+                return decodeMii(scanned, debug);
+            });
+        }
         if (toDecode === null) throw new Error(`Detected an image QR format (PNG/JPG/WEBP), but couldn't decode the QR code!`);
         miiType = detectMiiFormat(toDecode);
     }
@@ -366,6 +396,17 @@ function decodeMii(toDecode, debug) {
         let workableFormats = detectMiiFormat(toDecode, debug);
         if (workableFormats.filter(a => formats[a].hasOwnProperty("decoder")).length > 0) {
             toDecode = formats[workableFormats[0]].decoder(toDecode);
+            if (isPromiseLike(toDecode)) {
+                return toDecode.then(decoded => {
+                    if (debug) console.log(`Attempted to decode as ${workableFormats[0]}`);
+                    if (typeof decoded == 'object' && !isBuffer(decoded)) {
+                        if (debug) console.log(`Returning a pre-decoded object`);
+                        return decoded;
+                    }
+                    if (debug) console.log(`Now decoding async decoder output`);
+                    return decodeMii(decoded, debug);
+                });
+            }
             if (debug) console.log(`Attempted to decode as ${workableFormats[0]}`);
             //If it decoded correctly to JSON already, our job here is done.
             if (typeof toDecode == 'object' && !isBuffer(toDecode)) {
@@ -489,7 +530,12 @@ function encodeMii(miiObject, targetFormat, debug) {
             throw new Error(`Format ${targetFormat} does not have a struct definition for encoding`);
         }
         else {
-            if (formats[targetFormat].hasOwnProperty("preEncode")) miiObject = encodeMii(miiObject, formats[targetFormat].preEncode);
+            if (formats[targetFormat].hasOwnProperty("preEncode")) {
+                miiObject = encodeMii(miiObject, formats[targetFormat].preEncode);
+                if (isPromiseLike(miiObject)) {
+                    return miiObject.then(encoded => formats[targetFormat].encoder(encoded));
+                }
+            }
             return formats[targetFormat].encoder(miiObject);
         }
     }

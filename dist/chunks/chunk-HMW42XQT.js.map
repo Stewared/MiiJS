@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../shims/empty.js"],
+  "sourcesContent": ["// Empty shim for Node.js-only modules in browser builds\r\nmodule.exports = {};"],
+  "mappings": "+CAAA,IAAAA,EAAAC,EAAA,CAAAC,EAAAC,IAAA,CAAAC,IACAD,EAAO,QAAU,CAAC",
+  "names": ["require_empty", "__commonJSMin", "exports", "module", "init_globals_browser"]
+}

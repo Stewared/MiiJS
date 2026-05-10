@@ -155,6 +155,10 @@ function extractMiiFromAmiibo(dump) {
 
 //Insert Mii data into an Amiibo dump
 function insertMiiIntoAmiibo(dump, mii) {
+    dump=isBuffer(dump);
+    if(!dump){
+        throw new Error(`Dump is not a valid Buffer type`);
+    }
     mii=decodeMii(mii);
     let miiWithChecksum=encodeMii(mii,MiiFormats.FFSD);
     const decrypted = decryptAmiibo(dump.slice(0, NFC3D_AMIIBO_SIZE));//Decrypt the Amiibo

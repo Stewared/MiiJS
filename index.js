@@ -1,11 +1,5 @@
 import * as miiFormats from "./formats.js";
-import * as amiiboHandler from "./amiiboHandler.js";
-import * as miiMeasureConversion from "./miiMeasureConversion.js";
-import * as miiRendering from "./miiRendering.js";
-import * as miiCrypto from "./miiCrypto.js";
 import * as miiProcess from "./miiProcess.js";
-import * as miiInstructions from "./miiInstructions.js";
-import * as miiBabies from "./miiBabies.js";
 
 import * as qrTools from "./qrTools.js";
 
@@ -16,21 +10,187 @@ import isValidPath from "is-valid-path";
 import {fs} from "./platform.js";
 
 export * from "./formats.js";
-export * from "./amiiboHandler.js";
-export * from "./miiMeasureConversion.js";
-export * from "./miiRendering.js";
-export * from "./miiCrypto.js";
 export * from "./miiProcess.js";
-export * from "./miiInstructions.js";
-export * from "./miiBabies.js";
 export * from "./qrTools.js";
 
-const { renderMii } = miiRendering;
 const { encodeMii, decodeMii, detectMiiFormat } = miiProcess;
 const { mappings, MiiFormats, ConsoleFormats } = miiFormats;
 const { makeQR, scanQR } = qrTools;
-const { insertMiiIntoAmiibo } = amiiboHandler;
-const { makeInstructions, getAs, setAs } = miiInstructions;//getAs comes from here because miiInstructions needs to use it so much, and setAs is there to be near its brother in arms
+
+const optionalModulePromises = {};
+function loadOptionalModule(name, importer) {
+    optionalModulePromises[name] ??= importer();
+    return optionalModulePromises[name];
+}
+
+const loadAmiiboHandler = () => loadOptionalModule("amiiboHandler", () => import("./amiiboHandler.js"));
+const loadMeasureConversion = () => loadOptionalModule("miiMeasureConversion", () => import("./miiMeasureConversion.js"));
+const loadRendering = () => loadOptionalModule("miiRendering", () => import("./miiRendering.js"));
+const loadCrypto = () => loadOptionalModule("miiCrypto", () => import("./miiCrypto.js"));
+const loadInstructions = () => loadOptionalModule("miiInstructions", () => import("./miiInstructions.js"));
+const loadBabies = () => loadOptionalModule("miiBabies", () => import("./miiBabies.js"));
+
+async function callOptionalModule(loader, exportName, args) {
+    const mod = await loader();
+    return mod[exportName](...args);
+}
+
+function isPromiseLike(value) {
+    return value && typeof value.then === "function";
+}
+
+function isSupportedBuffer(input) {
+    return Buffer.isBuffer(input)
+        || input instanceof Uint8Array
+        || input instanceof ArrayBuffer
+        || (typeof SharedArrayBuffer !== "undefined" && input instanceof SharedArrayBuffer);
+}
+
+async function insertMiiIntoAmiibo(...args) {
+    return callOptionalModule(loadAmiiboHandler, "insertMiiIntoAmiibo", args);
+}
+
+async function extractMiiFromAmiibo(...args) {
+    return callOptionalModule(loadAmiiboHandler, "extractMiiFromAmiibo", args);
+}
+
+async function miiHeightToMeasurements(...args) {
+    return callOptionalModule(loadMeasureConversion, "miiHeightToMeasurements", args);
+}
+
+async function inchesToMiiHeight(...args) {
+    return callOptionalModule(loadMeasureConversion, "inchesToMiiHeight", args);
+}
+
+async function centimetersToMiiHeight(...args) {
+    return callOptionalModule(loadMeasureConversion, "centimetersToMiiHeight", args);
+}
+
+async function miiWeightToMeasurements(...args) {
+    return callOptionalModule(loadMeasureConversion, "miiWeightToMeasurements", args);
+}
+
+async function imperialHeightWeightToMiiWeight(...args) {
+    return callOptionalModule(loadMeasureConversion, "imperialHeightWeightToMiiWeight", args);
+}
+
+async function metricHeightWeightToMiiWeight(...args) {
+    return callOptionalModule(loadMeasureConversion, "metricHeightWeightToMiiWeight", args);
+}
+
+async function renderMii(...args) {
+    return callOptionalModule(loadRendering, "renderMii", args);
+}
+
+async function decryptMii(...args) {
+    return callOptionalModule(loadCrypto, "decryptMii", args);
+}
+
+async function encryptMii(...args) {
+    return callOptionalModule(loadCrypto, "encryptMii", args);
+}
+
+async function miiCrcCalc(...args) {
+    return callOptionalModule(loadCrypto, "miiCrcCalc", args);
+}
+
+async function makeInstructions(...args) {
+    return callOptionalModule(loadInstructions, "makeInstructions", args);
+}
+
+async function getAs(...args) {
+    return callOptionalModule(loadInstructions, "getAs", args);
+}
+
+async function setAs(...args) {
+    return callOptionalModule(loadInstructions, "setAs", args);
+}
+
+async function kidomatic(...args) {
+    return callOptionalModule(loadBabies, "kidomatic", args);
+}
+
+async function makeMiiChild(...args) {
+    return callOptionalModule(loadBabies, "makeMiiChild", args);
+}
+
+const FFLExpression = Object.freeze({
+    NORMAL: 0,
+    SMILE: 1,
+    ANGER: 2,
+    SORROW: 3,
+    PUZZLED: 3,
+    SURPRISE: 4,
+    SURPRISED: 4,
+    BLINK: 5,
+    OPEN_MOUTH: 6,
+    SMILE_OPEN_MOUTH: 7,
+    HAPPY: 7,
+    ANGER_OPEN_MOUTH: 8,
+    SORROW_OPEN_MOUTH: 9,
+    SURPRISE_OPEN_MOUTH: 10,
+    BLINK_OPEN_MOUTH: 11,
+    WINK_LEFT: 12,
+    WINK_RIGHT: 13,
+    WINK_LEFT_OPEN_MOUTH: 14,
+    WINK_RIGHT_OPEN_MOUTH: 15,
+    LIKE_WINK_LEFT: 16,
+    LIKE: 16,
+    LIKE_WINK_RIGHT: 17,
+    FRUSTRATED: 18,
+    BORED: 19,
+    BORED_OPEN_MOUTH: 20,
+    SIGH_MOUTH_STRAIGHT: 21,
+    SIGH: 22,
+    DISGUSTED_MOUTH_STRAIGHT: 23,
+    DISGUSTED: 24,
+    LOVE: 25,
+    LOVE_OPEN_MOUTH: 26,
+    DETERMINED_MOUTH_STRAIGHT: 27,
+    DETERMINED: 28,
+    CRY_MOUTH_STRAIGHT: 29,
+    CRY: 30,
+    BIG_SMILE_MOUTH_STRAIGHT: 31,
+    BIG_SMILE: 32,
+    CHEEKY: 33,
+    CHEEKY_DUPLICATE: 34,
+    JOJO_EYES_FUNNY_MOUTH: 35,
+    JOJO_EYES_FUNNY_MOUTH_OPEN: 36,
+    SMUG: 37,
+    SMUG_OPEN_MOUTH: 38,
+    RESOLVE: 39,
+    RESOLVE_OPEN_MOUTH: 40,
+    UNBELIEVABLE: 41,
+    UNBELIEVABLE_DUPLICATE: 42,
+    CUNNING: 43,
+    CUNNING_DUPLICATE: 44,
+    RASPBERRY: 45,
+    RASPBERRY_DUPLICATE: 46,
+    INNOCENT: 47,
+    INNOCENT_DUPLICATE: 48,
+    CAT: 49,
+    CAT_DUPLICATE: 50,
+    DOG: 51,
+    DOG_DUPLICATE: 52,
+    TASTY: 53,
+    TASTY_DUPLICATE: 54,
+    MONEY_MOUTH_STRAIGHT: 55,
+    MONEY: 56,
+    SPIRAL_MOUTH_STRAIGHT: 57,
+    CONFUSED: 58,
+    CHEERFUL_MOUTH_STRAIGHT: 59,
+    CHEERFUL: 60,
+    BLANK_61: 61,
+    BLANK_62: 62,
+    GRUMBLE_MOUTH_STRAIGHT: 63,
+    GRUMBLE: 64,
+    MOVED_MOUTH_STRAIGHT: 65,
+    MOVED: 66,
+    SINGING_MOUTH_SMALL: 67,
+    SINGING: 68,
+    STUNNED: 69,
+    MAX: 70
+});
 
 // Types
 /** @typedef {import("./mii-jsdoc.js").Mii} MiiData */
@@ -124,7 +284,11 @@ class Mii {
             this.fields = decodedMii;
         }
         else{
-            this.fields=decodeMii(decodedMii);
+            const decoded = decodeMii(decodedMii);
+            if (isPromiseLike(decoded)) {
+                throw new Error("This Mii format needs optional async decoding. Use await Mii.create(input) instead of new Mii(input).");
+            }
+            this.fields=decoded;
         }
     }
 
@@ -193,6 +357,9 @@ class Mii {
             throw new Error(`Unexpected format: ${format}. Expected one of: ${Object.keys(MiiFormats).join(", ")}`);
         }
         let studioMii = encodeMii(this.fields, format);
+        if (isPromiseLike(studioMii)) {
+            throw new Error("This format needs optional async encoding. Use await mii.encode(format) instead of mii.toString(format).");
+        }
         return studioMii.toString('hex');
     }
 
@@ -253,11 +420,11 @@ class Mii {
      * Set with validation
      * @param {ConsoleFormat} device - The console format to validate against
      */
-    setAs(device = ConsoleFormats.SWITCH, path, value) {
+    async setAs(device = ConsoleFormats.SWITCH, path, value) {
         if (!ConsoleFormats.hasOwnProperty(device) && !getKeyByValue(ConsoleFormats, device)) {
             throw new Error(`Invalid console type ${device}! Expected one of ${Object.keys(ConsoleFormats).join(", ")}.`);
         }
-        this.fields = setAs(this.fields, device, path, value);//Validation of path is handled here
+        this.fields = await setAs(this.fields, device, path, value);//Validation of path is handled here
         return this.fields;
     }
 
@@ -265,7 +432,7 @@ class Mii {
      * Get field with validation
      * @param {ConsoleFormat} device - The console format to validate against
      */
-    getAs(device = ConsoleFormats.SWITCH, path) {
+    async getAs(device = ConsoleFormats.SWITCH, path) {
         if (!ConsoleFormats.hasOwnProperty(device) && !getKeyByValue(ConsoleFormats, device)) {
             throw new Error(`Invalid console type ${device}! Expected one of ${Object.keys(ConsoleFormats).join(", ")}.`);
         }
@@ -296,19 +463,18 @@ class Mii {
         return await renderMii(this.fields, Object.assign(options, { fullBody }));
     }
 
-    insertIntoAmiibo(amiiboDump) {
-        if (!amiiboDump || !Buffer.isBuffer(amiiboDump) || (amiiboDump?.length !== 532 && amiiboDump?.length !== 540)) {
+    async insertIntoAmiibo(amiiboDump) {
+        if (!amiiboDump || !isSupportedBuffer(amiiboDump) || (amiiboDump?.byteLength !== 532 && amiiboDump?.byteLength !== 540 && amiiboDump?.length !== 532 && amiiboDump?.length !== 540)) {
             throw new Error(`Provided dump is not an Amiibo! Expected Buffer with a length that's one of: 532, 540. Received: ${typeof amiiboDump}, ${amiiboDump?.length}`);
         }
-        let mii = encodeMii(this.fields, MiiFormats.FFSD);
-        return insertMiiIntoAmiibo(amiiboDump, mii);
+        return insertMiiIntoAmiibo(amiiboDump, this.fields);
     }
 
     /** 
      * Generate instructions for how to recreate this mii on a given console
      * @param {ConsoleFormat} device - The console to generate instructions for
      * */
-    toInstructions(device = ConsoleFormats.SWITCH) { //Switch over Switch 2 here purely for one wording case of "Use the Y Button to flip the hair" :zany_face: (Thank you for this button Switch 2 I love it but Switch 2 isn't widespread yet)
+    async toInstructions(device = ConsoleFormats.SWITCH) { //Switch over Switch 2 here purely for one wording case of "Use the Y Button to flip the hair" :zany_face: (Thank you for this button Switch 2 I love it but Switch 2 isn't widespread yet)
         if (!ConsoleFormats.hasOwnProperty(device) && !getKeyByValue(ConsoleFormats, device)) {
             throw new Error(`Invalid console type ${device}! Expected one of ${Object.keys(ConsoleFormats).join(", ")}.`);
         }
@@ -318,7 +484,34 @@ class Mii {
 
 const FavoriteColors = lookupTables.favoriteColors;
 
-export { Mii, FavoriteColors, getNestedValue, setNestedValue, deleteNestedValue, getKeyByValue };
+export {
+    Mii,
+    FavoriteColors,
+    FFLExpression,
+
+    insertMiiIntoAmiibo,
+    extractMiiFromAmiibo,
+    miiHeightToMeasurements,
+    inchesToMiiHeight,
+    centimetersToMiiHeight,
+    miiWeightToMeasurements,
+    imperialHeightWeightToMiiWeight,
+    metricHeightWeightToMiiWeight,
+    renderMii,
+    decryptMii,
+    encryptMii,
+    miiCrcCalc,
+    makeInstructions,
+    getAs,
+    setAs,
+    kidomatic,
+    makeMiiChild,
+
+    getNestedValue,
+    setNestedValue,
+    deleteNestedValue,
+    getKeyByValue
+};
 
 export default{
     Mii,
@@ -326,14 +519,27 @@ export default{
     //The raw functions are provided as well for those who'd rather forego the class. Flexible, not rigid.
     ...miiProcess,
     ...miiFormats,
-    ...miiRendering,
-    ...miiInstructions,
-    ...miiMeasureConversion,
-    ...miiBabies,
-    ...amiiboHandler,
-    ...miiCrypto,
 
     ...qrTools,
+
+    insertMiiIntoAmiibo,
+    extractMiiFromAmiibo,
+    miiHeightToMeasurements,
+    inchesToMiiHeight,
+    centimetersToMiiHeight,
+    miiWeightToMeasurements,
+    imperialHeightWeightToMiiWeight,
+    metricHeightWeightToMiiWeight,
+    renderMii,
+    FFLExpression,
+    decryptMii,
+    encryptMii,
+    miiCrcCalc,
+    makeInstructions,
+    getAs,
+    setAs,
+    kidomatic,
+    makeMiiChild,
 
     FavoriteColors,
 

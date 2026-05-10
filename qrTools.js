@@ -4,7 +4,6 @@ import { Buffer } from "./platform.js";
 
 import { decodeMii, encodeMii, detectMiiFormat } from "./miiProcess.js";
 import { MiiFormats } from "./formats.js";
-import { renderMii } from "./miiRendering.js";
 
 const ONE_BY_ONE_GIF =
   "data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==";
@@ -13,6 +12,12 @@ const isBrowser = typeof window !== "undefined" && typeof document !== "undefine
 const importNodeOnlyModule = isBrowser
   ? null
   : new Function("specifier", "return import(specifier)");
+
+let miiRenderingPromise;
+async function renderMii(data, opts) {
+  miiRenderingPromise ??= import("./miiRendering.js");
+  return (await miiRenderingPromise).renderMii(data, opts);
+}
 
 async function loadNodeOnlyModule(specifier) {
   if (!importNodeOnlyModule) {
@@ -248,8 +253,10 @@ async function makeQR(input, opts = {}) {
   if (typeof input === "string") {
     dataStr = input;
   } else if (typeof input === "object" && input?.general?.hasOwnProperty("favoriteColor")) {
-    const overlayPng = await renderMii(input, opts);
-    image = Buffer.isBuffer(overlayPng) ? overlayPng : Buffer.from(overlayPng);
+    if (!image && !noRenderMii) {
+      const overlayPng = await renderMii(input, opts);
+      image = Buffer.isBuffer(overlayPng) ? overlayPng : Buffer.from(overlayPng);
+    }
 
     if (!label && input?.meta?.name?.length > 0) label = input.meta.name;
     if (input?.meta?.type === "Special") isSpecial = true;
@@ -261,7 +268,7 @@ async function makeQR(input, opts = {}) {
       try {
         const overlayPng = await renderMii(input, opts);
         image = Buffer.isBuffer(overlayPng) ? overlayPng : Buffer.from(overlayPng);
-        const temp = decodeMii(input);
+        const temp = await decodeMii(input);
         if (!label && temp?.meta?.name?.length > 0) label = temp.meta.name;
         if (temp?.meta?.type === "Special") isSpecial = true;
       } catch (e) {

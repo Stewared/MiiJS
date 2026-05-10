@@ -1,7 +1,30 @@
 import { backTables, lookupTables } from "./data.js";
-import { decryptMii, encryptMii, miiCrcCalc } from "./miiCrypto.js";
-import { extractMiiFromAmiibo } from "./amiiboHandler.js";
 import lodash from "lodash";
+
+let miiCryptoPromise;
+let amiiboHandlerPromise;
+
+async function loadMiiCrypto() {
+    miiCryptoPromise ??= import("./miiCrypto.js");
+    return miiCryptoPromise;
+}
+
+async function loadAmiiboHandler() {
+    amiiboHandlerPromise ??= import("./amiiboHandler.js");
+    return amiiboHandlerPromise;
+}
+
+async function decryptMii(data) {
+    return (await loadMiiCrypto()).decryptMii(data);
+}
+
+async function encryptMii(data) {
+    return (await loadMiiCrypto()).encryptMii(data);
+}
+
+async function extractMiiFromAmiibo(data) {
+    return (await loadAmiiboHandler()).extractMiiFromAmiibo(data);
+}
 
 function binaryToHex(binaryString) {
     const decimal = BigInt('0b' + binaryString);
@@ -33,6 +56,51 @@ function getKeyByValue(object, value) {
         }
     }
     return null;
+}
+
+function crc16(data, current = 0x0000) {
+    let crc = current;
+    for (let i = 0; i < data.length; i++) {
+        const byte = data[i];
+        for (let bit = 7; bit >= 0; bit--) {
+            crc = ((crc << 1) | ((byte >> bit) & 0x1)) & 0x1FFFF;
+            if (crc & 0x10000) {
+                crc ^= 0x1021;
+            }
+        }
+    }
+    for (let i = 0; i < 16; i++) {
+        crc = (crc << 1) & 0x1FFFF;
+        if (crc & 0x10000) {
+            crc ^= 0x1021;
+        }
+    }
+    return crc & 0xFFFF;
+}
+
+const crc32CksumTable = new Uint32Array(256);
+function generateCrc32Table(table, poly = 0x04C11DB7) {
+    for (let i = 0; i < 256; i++) {
+        let crc = i << 24;
+        for (let j = 0; j < 8; j++) {
+            crc = (crc & 0x80000000) ? (crc << 1) ^ poly : crc << 1;
+        }
+        table[i] = crc >>> 0;
+    }
+}
+generateCrc32Table(crc32CksumTable);
+
+function crc32(input, table = crc32CksumTable) {
+    let crc = 0x00000000;
+    for (let i = 0; i < input.length; i++) {
+        const byte = (input[i] ^ (crc >>> 24)) & 0xFF;
+        crc = (table[byte] ^ (crc << 8)) >>> 0;
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function miiCrcCalc(dat, mode = 16) {
+    return mode === 32 ? crc32(dat) : crc16(dat);
 }
 
 const decoders = {
