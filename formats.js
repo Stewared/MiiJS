@@ -205,13 +205,22 @@ function forwardPort(data, from, to = "SWITCH") {
         throw new Error(`${to} is not a valid type, expected one of ${Object.keys(ConsoleFormats).join(", ")}.`);
     }
 
-    if (from === "WII" || from === "DS" || to === "3DS") {
-        const feature = backTables["3ds"].features[data.face.feature];
-        if (typeof feature === 'string') {
-            data.face.makeup = feature;
+    if (from === "WII" || from === "DS") {
+        const legacyFeature = Number(data.face.feature);
+        // backTables["3ds"].features maps modern feature -> legacy combined value.
+        // Wii/DS decoding needs the reverse: split one legacy value into feature or makeup.
+        const modernFeature = backTables["3ds"].features.findIndex(feature => (
+            typeof feature !== 'string' && Number(feature) === legacyFeature
+        ));
+
+        if (modernFeature >= 0) {
+            data.face.feature = modernFeature;
+            data.face.makeup = 0;
         }
         else {
-            data.face.feature = feature;
+            const modernMakeup = backTables["3ds"].makeups.findIndex(makeup => Number(makeup) === legacyFeature);
+            data.face.feature = 0;
+            data.face.makeup = modernMakeup >= 0 ? modernMakeup : 0;
         }
     }
 
