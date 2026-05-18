@@ -11,15 +11,6 @@ async function kidomatic(mii,hairGroupIndex=-1){
     }
     mii=await decodeMii(mii);
 
-    //Clear beards and wrinkles
-    mii.beard.type=0;
-    mii.beard.mustache.type=0;
-    mii.face.feature=0;
-    //For parity with the original, though I wouldn't be averse to making this a toggle to allow child Miis to generate with these
-    mii.face.makeup=0;
-    mii.glasses.type=0;
-    mii.hair.flipped=false;
-
     //Child Miis generate the last stage, then build offsets backwards through the younger stages of life starting at the older stages
     var eyeBase = Math.min(Math.max(mii.eyes.yPosition + 2, 0), 18);
     let browBase = mii.eyebrows.yPosition + 2;
@@ -49,6 +40,16 @@ async function kidomatic(mii,hairGroupIndex=-1){
         if(iStage<4){
             mii.stages[iStage].face.type=9;//Extra technically, I'm fairly certain this still happens just in a different part than I directly researched
             mii.stages[iStage].eyebrows.color=7;
+        }
+        if(iStage<5||hairGroupIndex!=-1){
+            //Clear beards and wrinkles
+            mii.stages[iStage].beard.type=0;
+            mii.stages[iStage].beard.mustache.type=0;
+            mii.stages[iStage].face.feature=0;
+            //For parity with the original, though I wouldn't be averse to making this a toggle to allow child Miis to generate with these
+            mii.stages[iStage].face.makeup=0;
+            mii.stages[iStage].glasses.type=0;
+            mii.stages[iStage].hair.flipped=false;
         }
 
         mii.stages[iStage].general.height=Math.floor((mii.stages[iStage].general.height/5)*iStage);//Extra, Tomodachi Life just uses alternate models and therefore no official height growth is in-game yet one is displayed, so I mocked up a basic growing up height. Newborn will always be the shortest, stage 5 will always be the actual height, and the values in between are just a range in between. We don't do the same for weight since Mii weights appear to be more of a representative of underweight or overweight for the height.

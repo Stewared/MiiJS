@@ -369,6 +369,12 @@ export const lookupTables={
         0,8,3,
         4,1,5,
         14,13,11
+    ],
+    "makeupsFeatures":[
+        0,'1','6',
+        '9',5,2,
+        3,7,8,
+        '10',9,11
     ]
 };
 export const childGenTables={

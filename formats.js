@@ -206,21 +206,18 @@ function forwardPort(data, from, to = "SWITCH") {
     }
 
     if (from === "WII" || from === "DS") {
-        const legacyFeature = Number(data.face.feature);
-        // backTables["3ds"].features maps modern feature -> legacy combined value.
-        // Wii/DS decoding needs the reverse: split one legacy value into feature or makeup.
-        const modernFeature = backTables["3ds"].features.findIndex(feature => (
-            typeof feature !== 'string' && Number(feature) === legacyFeature
-        ));
-
-        if (modernFeature >= 0) {
-            data.face.feature = modernFeature;
+        const modernFeatureOrMakeup = lookupTables.makeupsFeatures[data.face.feature];
+        if (typeof modernFeatureOrMakeup === 'string') {
+            data.face.feature = 0;
+            data.face.makeup = Number(modernFeatureOrMakeup);
+        }
+        else if (typeof modernFeatureOrMakeup === 'number') {
+            data.face.feature = modernFeatureOrMakeup;
             data.face.makeup = 0;
         }
         else {
-            const modernMakeup = backTables["3ds"].makeups.findIndex(makeup => Number(makeup) === legacyFeature);
             data.face.feature = 0;
-            data.face.makeup = modernMakeup >= 0 ? modernMakeup : 0;
+            data.face.makeup = 0;
         }
     }
 
@@ -284,12 +281,21 @@ function backPort(data, to, from = "SWITCH") {
         //Later Miis have two separate fields, so you can have makeup and facial features (such as wrinkles) applied at the same time. The Wii/NDS only has one that covers both.
         //We prioritize facial features here because the Wii/NDS supports more of those than they do makeup types, and is more likely to apply.
         //Additionally, facial features are more likely to be inherent to the face itself.
-        if (typeof (backTables["3ds"].features[data.face.feature]) === 'string') {
-            data.face.feature = backTables["3ds"].makeups[data.face.makeup];
+        const legacyFeature = backTables["3ds"].features[data.face.feature];
+        const legacyMakeup = backTables["3ds"].makeups[data.face.makeup];
+        const numericLegacyFeature = Number(legacyFeature);
+        const numericLegacyMakeup = Number(legacyMakeup);
+
+        if (typeof legacyFeature !== 'string') {
+            data.face.feature = Number.isFinite(numericLegacyFeature) ? numericLegacyFeature : 0;
+        }
+        else if (numericLegacyMakeup > 0) {
+            data.face.feature = numericLegacyMakeup;
         }
         else {
-            data.face.feature = backTables["3ds"].features[data.face.feature];
+            data.face.feature = Number.isFinite(numericLegacyFeature) ? numericLegacyFeature : 0;
         }
+        data.face.makeup = 0;
 
         if (data.hair.type > 71) data.hair.type = backTables["3ds"].hairs[data.hair.type - 72];
         if (data.face.type > 7) data.face.type = backTables["3ds"].faces[data.face.type - 8];
