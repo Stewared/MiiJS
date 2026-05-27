@@ -2255,12 +2255,8 @@ commonStructs[MiiFormats.TLC] = [
     },
     {
         name: "islandName",
-        len: 144,
+        len: 160,
         text: 'le'
-    },
-    {
-        name: "unknown",
-        len: 16
     },
     {
         name: "checksum",
