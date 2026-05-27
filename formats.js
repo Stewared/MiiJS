@@ -1,29 +1,30 @@
-import { backTables, lookupTables } from "./data.js";
+import { backTables, lookupTables, islandAddresses } from "./data.js";
+import { decryptMii, decryptStudio2, encryptMii, encryptStudio2 } from "./miiCrypto.js";
 import lodash from "lodash";
 
-let miiCryptoPromise;
 let amiiboHandlerPromise;
-
-async function loadMiiCrypto() {
-    miiCryptoPromise ??= import("./miiCrypto.js");
-    return miiCryptoPromise;
-}
 
 async function loadAmiiboHandler() {
     amiiboHandlerPromise ??= import("./amiiboHandler.js");
     return amiiboHandlerPromise;
 }
 
-async function decryptMii(data) {
-    return (await loadMiiCrypto()).decryptMii(data);
-}
-
-async function encryptMii(data) {
-    return (await loadMiiCrypto()).encryptMii(data);
-}
-
 async function extractMiiFromAmiibo(data) {
     return (await loadAmiiboHandler()).extractMiiFromAmiibo(data);
+}
+
+function encodeMiitomoMii(data) {
+    return Buffer.concat([
+        encoders.appendCrc(data.subarray(0, 0x60)),
+        data.subarray(0x60)
+    ]);
+}
+
+function encodeMiitopiaMii(data) {
+    return Buffer.concat([
+        encoders.appendCrc(data.subarray(0, 0x60)),
+        data.subarray(0x60)
+    ]);
 }
 
 function binaryToHex(binaryString) {
@@ -227,11 +228,8 @@ function forwardPort(data, from, to = "SWITCH") {
         if (!data.hair.color) data.hair.color = 8;
         data.eyes.color += 8;
 
-        if (data.mouth.color < 4) {
+        if (data.mouth.color < 5) {
             data.mouth.color += 19;
-        }
-        else {
-            data.mouth.color = 0;
         }
 
         if (!data.glasses.color) {
@@ -404,15 +402,26 @@ const MiiFormats = /** @type {const} */ ({
     FFED: 'ffed',
     /**
     * Miitomo
-    * The first 0x5C Bytes are FFCD, then extra data follows.
+    * The first 0x60 Bytes are FFSD, then Miitomo QR data follows.
     */
-    Miitomo: 'mt',
+    Miitomo: 'miitomo',
+    MIITOMO: 'miitomo',
     /**
-    * Miitomo
-    * The first 0x5C Bytes are FFCD, then extra data follows.
+    * Miitomo Encrypted
     */
+    MIITOMOE: 'miitomoe',
+    /**
+    * Miitopia
+    * The first 0x60 Bytes are FFSD, then Miitopia QR data follows.
+    */
+    Miitopia: 'mt',
     MT: 'mt',
+    MIITOPIA: 'mt',
+    /**
+    * Miitopia Encrypted
+    */
     MTE: 'mte',
+
     /**
     * Tomodachi Life
     * The first 0x5C Bytes are FFCD, then extra data follows.
@@ -485,6 +494,11 @@ const MiiFormats = /** @type {const} */ ({
     * Browser Localstorage format after editing Miis via Mii Studio
     */
     MNMS: 'mnms',
+    /**
+    * Encrypted My Nintendo Mii Studio (Unofficial Name)
+    * Used for requesting image data from My Nintendo's Mii Studio
+    */
+    EMNMS: 'emnms',
     /**
     * Named after Mii Studio
     * Alias of MNMS
@@ -2708,121 +2722,54 @@ const formats = {
     },
 
     //Miitomo
-    [MiiFormats.MT]: {
-        len: 0x84,
+    [MiiFormats.MIITOMO]: {
+        len: 0x88,
         translation: '3ds',
-        struct: [//Highly experimental, I do not have access to Miitomo so this is exclusively derived from an online resource and is entirely untested.
-            ...commonStructs[MiiFormats.FFCD].struct,
-
-            // Adapted from the struct by Arian Kordi: https://github.com/ariankordi/my-jsfiddles/blob/c833be14f1674240e310453cdfa3db5ede53e059/miitomo-mii-data-decoder/script.js#L3-L39
+        struct: [
+            ...commonStructs[MiiFormats.FFSD].struct,
             {
-                name: "mtSig",
-                len: 32,
+                name: "miitomoInfo",
+                len: 320,
                 hex: true,
-                encoder: () => "03000000"
-            },
-            {
-                name: "unknown",
-                len: 4
-            },
-            {
-                name: "allColor",
-                len: 4
-            },
-            {
-                name: "topsLongColor",
-                len: 4
-            },
-            {
-                name: "topsColor",
-                len: 4
-            },
-            {
-                name: "bottomsAColor",
-                len: 4
-            },
-            {
-                name: "bottomsBColor",
-                len: 4
-            },
-            {
-                name: "shoesColor",
-                len: 4
-            },
-            {
-                name: "accessoryColor",
-                len: 4
-            },
-            {
-                name: "headwearColor",
-                len: 4
-            },
-            {
-                name: "unknown",
-                len: 12
-            },
-            {
-                name: "allIndex",
-                len: 16
-            },
-            {
-                name: "topsLongIndex",
-                len: 16
-            },
-            {
-                name: "topsIndex",
-                len: 16
-            },
-            {
-                name: "bottomsAIndex",
-                len: 16
-            },
-            {
-                name: "bottomsBIndex",
-                len: 16
-            },
-            {
-                name: "shoesIndex",
-                len: 16
-            },
-            {
-                name: "accessoryIndex",
-                len: 16
-            },
-            {
-                name: "headwearIndex",
-                len: 16
-            },
-            {
-                name: "topsState",//02 Untucked, 01 Tucked?
-                len: 8
-            },
-            {
-                name: "voiceParam",
-                len: 48,
-                hex: true
-            },
-            {
-                name: "characterParam",
-                len: 40,
-                hex: true
-            },
-            {
-                name: "specialMiiRegion",
-                len: 8
-            },
-            {
-                name: "unknown",
-                len: 88
-            },
-            {
-                name: "birthYear",
-                len: 16
+                decoder: (hex) => Buffer.from(hex, "hex").toString("ascii"),
+                encoder: (value) => typeof value === "string" ? Buffer.from(value, "ascii").toString("hex") : ""
             }
-        ]
+        ],
+        encoder: encodeMiitomoMii,
+        preProcess: (dat)=>processors.cffcdPreProcess(dat,4),
+        postProcess: processors.cffcdPostProcess
+    },
+    [MiiFormats.MIITOMOE]: {
+        len: 0xAC,
+        decoder: decryptMii,
+        encoder: encryptMii,
+        preEncode: MiiFormats.MIITOMO
+    },
+    [MiiFormats.MT]: {
+        len: 0x120,
+        translation: '3ds',
+        struct: [
+            ...commonStructs[MiiFormats.FFSD].struct,
+            {
+                name: "padding",
+                len: 528
+            },
+            {
+                name: "warCry",
+                len: 416,
+                text:'le'
+            },
+            {
+                name: "padding",
+                len: 592
+            }
+        ],
+        encoder: encodeMiitopiaMii,
+        preProcess: (dat)=>processors.cffcdPreProcess(dat,4),
+        postProcess: processors.cffcdPostProcess
     },
     [MiiFormats.MTE]: {
-        len: 0xAC,
+        len: 0x144,
         decoder: decryptMii,
         encoder: encryptMii,
         preEncode: MiiFormats.MT
@@ -2842,8 +2789,45 @@ const formats = {
         translation: '3ds',
         struct: [...commonStructs[MiiFormats.FFCD].struct, ...commonStructs[MiiFormats.TLC]],
         encoder: (dat) => encoders.appendCrc(dat, 32),
-        preProcess: (d)=>processors.cffcdPreProcess(d,3),
-        postProcess: processors.cffcdPostProcess
+        preProcess: (d)=>{
+            return processors.cffcdPreProcess(d,3);
+        },
+        postProcess: (mii)=>{
+            mii=processors.cffcdPostProcess(mii);
+
+            /*
+                While we can derive what the resulting address would be from a given Island ID,
+                there is sadly no way to go back to the Island ID from the address pieces without
+                brute forcing due to the nature of the hash. A tool to do this is made available at
+                https://infinimii.com/islandAddress
+            */
+
+            const digest = crypto
+                .createHmac("sha1", Buffer.from("this is a tempolary key.\0", "ascii"))
+                .update(Buffer.from(mii?.tl?.island?.id?.id, "hex"))
+                .digest();
+
+            const h = (BigInt(digest.readUInt32LE(4)) << 32n) | BigInt(digest.readUInt32LE(0));
+            const wordCount = BigInt(islandAddresses.length);
+            const ocean = islandAddresses[Number(h % wordCount)];
+            const isles = islandAddresses[Number((h >> 10n) % wordCount)];
+            const num1 = Number((h >> 20n) % 1000n);
+            const num2 = Number((h >> 30n) % 1000n);
+
+            mii.tl.island.id.readable=`${mii.tl.island.name} Island\n${num1}-${num2} ${isles} Isles\n${ocean} Ocean`;
+
+            /*
+                consoleIdBytes: raw bytes 0..7
+                consoleIdU64LE: same value interpreted little-endian
+                timeBytes: raw bytes 8..15
+                timeLoU32LE: bytes 8..11, from the scene/time word at +0x30
+                timeHiU32LE: bytes 12..15, from the scene/time word at +0x34
+                timeU64LE: bytes 8..15 combined as one little-endian u64
+                derived HMAC address pieces: num1, num2, isles, ocean, and readable
+            */
+
+            return mii;
+        }
     },
     [MiiFormats.TLE]: {
         len: 372,
@@ -3410,6 +3394,12 @@ const formats = {
             }
         ]
     },
+    [MiiFormats.EMNMS]: {
+        len: 0x2f,
+        decoder: decryptStudio2,
+        encoder: encryptStudio2,
+        preEncode: MiiFormats.MNMS
+    },
 
     //Amiibo
     [MiiFormats.NTAG]: {
@@ -3536,9 +3526,13 @@ const mappings = {
     'hairDyeMode': 'tl.hairDye.mode',
     'hairDye': 'tl.hairDye.color',
     'catchphrase': 'tl.catchphrase',
-    'islandId1': 'tl.island.id',
-    'islandId2': 'tl.island.id',
-    'islandId3': 'tl.island.id',
+    'islandId1': 'tl.island.id.id',
+    'islandId2': 'tl.island.id.id',
+    'islandId3': 'tl.island.id.id',
+    'ocean':'tl.island.id.ocean',
+    'isles':'tl.island.id.isles',
+    'tlNum1':'tl.island.id.num1',
+    'tlNum2':'tl.island.id.num2',
     'authorId': 'tl.island.owner',
     'islanderId': 'tl.miiId',
     'voicePitch': 'tl.voice.pitch',
@@ -3559,28 +3553,31 @@ const mappings = {
     'unknownFlags': 'tl.unknownFlags',
 
     //Miitomo
-    'allColor': 'mt.clothing.color',
-    'topsLongColor': 'mt.clothing.top.long.color',
-    'topsColor': 'mt.clothing.top.color',
-    'bottomsAColor': 'mt.clothing.bottoms.a.color',
-    'bottomsBColor': 'mt.clothing.bottoms.b.color',
-    'shoesColor': 'mt.clothing.shoes.color',
-    'accessoryColor': 'mt.clothing.accessory.color',
-    'headwearColor': 'mt.clothing.headwear.color',
-    'allIndex': 'mt.clothing.index',
-    'topsLongIndex': 'mt.clothing.top.long.index',
-    'topsIndex': 'mt.clothing.top.index',
-    'bottomsAIndex': 'mt.clothing.bottoms.a.index',
-    'bottomsBIndex': 'mt.clothing.bottoms.b.index',
-    'shoesIndex': 'mt.clothing.shoes.index',
-    'accessoryIndex': 'mt.clothing.accessory.index',
-    'headwearIndex': 'mt.clothing.headwear.index',
-    'topsState': 'mt.clothing.top.state',
-    'voiceParam': 'mt.voice',
-    'characterParam': 'mt.character',
-    'specialMiiRegion': 'mt.specialRegion',
-    'birthYear': 'mt.birthYear',
-    'miitomoInfo': 'mt'//Remove once Miitomo is understood better
+    'allColor': 'miitomo.clothing.color',
+    'topsLongColor': 'miitomo.clothing.top.long.color',
+    'topsColor': 'miitomo.clothing.top.color',
+    'bottomsAColor': 'miitomo.clothing.bottoms.a.color',
+    'bottomsBColor': 'miitomo.clothing.bottoms.b.color',
+    'shoesColor': 'miitomo.clothing.shoes.color',
+    'accessoryColor': 'miitomo.clothing.accessory.color',
+    'headwearColor': 'miitomo.clothing.headwear.color',
+    'allIndex': 'miitomo.clothing.index',
+    'topsLongIndex': 'miitomo.clothing.top.long.index',
+    'topsIndex': 'miitomo.clothing.top.index',
+    'bottomsAIndex': 'miitomo.clothing.bottoms.a.index',
+    'bottomsBIndex': 'miitomo.clothing.bottoms.b.index',
+    'shoesIndex': 'miitomo.clothing.shoes.index',
+    'accessoryIndex': 'miitomo.clothing.accessory.index',
+    'headwearIndex': 'miitomo.clothing.headwear.index',
+    'topsState': 'miitomo.clothing.top.state',
+    'voiceParam': 'miitomo.voice',
+    'characterParam': 'miitomo.character',
+    'specialMiiRegion': 'miitomo.specialRegion',
+    'birthYear': 'miitomo.birthYear',
+    'miitomoInfo': 'miitomo',//Remove once Miitomo is understood better
+
+    //Miitopia
+    'warCry':'mt.warCry'
 };
 
 formats[MiiFormats.CFCD].preProcess=(dat)=>processors.cffcdPreProcess(dat,3);
@@ -3616,7 +3613,6 @@ const defaultMappings = {
     'originalDevice': 4,//3DS/Wii U set this, Wii/NDS have code written to set this to 1/2 in their post process, so having the Switch (technically and Wii U) as a default is fine and should be what's desired in almost all cases from a default.
     'miicVersion': 4,
     'miicOriginPlatform': 5,
-    'miicBirthYear': 0,
     'miicFacePaintColor': -1,
     'miicHatFavoriteColor': -1,
     'miicHatCommonColor': -1,
@@ -3624,7 +3620,6 @@ const defaultMappings = {
     'miicBodyType': -1,
     'miicPantsColor': -1,
     'miicPersonality': -1,
-    'miicRegionMove': 0,
     'miicShirtColor': -1,
     'miicTransferred': false,
     'miicEyeSclera': false,
@@ -3684,14 +3679,12 @@ const defaultMappings = {
     'voiceQuality': 50,
     'voiceTone': 50,
     'voiceAccent': 50,
-    'voiceIntonation': 0,
     'personalityMovement': 4,
     'personalitySpeech': 4,
     'personalityExpressiveness': 4,
     'personalityAttitude': 4,
     'personalityOverall': 4,
     'isAdult': true,
-    'voiceParam': '000000000000',
     'unknownFlags': '045D3FB91CD3040D3DC07600FEFF0F20FFFF0F'//Donor flags from one of my Miis, I don't know what's in these flags but without them the Mii won't load so here's mine
 };
 

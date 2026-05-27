@@ -452,15 +452,16 @@ class Mii {
 
     /** Render the mii to a QR code */
     async toQR(device="3DS",options = {}) {//The 3DS outsold the Wii U and has more Mii centric games
-        // TODO: document the supported options
         let mii = await encodeMii(this.fields, (["3DS","CFED","CFSD","CFCD"].includes(device))?(this.fields.hasOwnProperty("tl")?MiiFormats.TLE:MiiFormats.CFED):MiiFormats.FFED);
         return makeQR(mii, options);
     }
 
     /** Render the Mii to an image */
     async render(fullBody = false, options = {}) {
-        // TODO: document options
         return await renderMii(this.fields, Object.assign(options, { fullBody }));
+    }
+    async renderWithStudio(fullBody = false){
+        return await renderMiiWithStudio(this.fields, fullBody);
     }
 
     async insertIntoAmiibo(amiiboDump) {

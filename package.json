@@ -2,7 +2,7 @@
   "type": "module",
   "name": "miijs",
   "description": "The most complete and easy to use Mii library available.",
-  "version": "3.0.7",
+  "version": "3.0.9",
   "main": "index.js",
   "browser": "dist/miijs.browser.js",
   "module": "dist/miijs.browser.esm.js",

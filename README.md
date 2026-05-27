@@ -179,6 +179,10 @@ By order of console release. A difference of C vs S dictates not having vs havin
     - Tomodachi Life QR Code Mii data after being decrypted in various sizes/aliases
 - .tle
     - Tomodachi Life QR Code Encrypted data.
+- .mt, .miitopia
+    - Miitopia QR Code Mii data after being decrypted
+- .mte
+    - Miitopia QR Code Encrypted data.
 ### Wii U
 - .ffcd, .ffsd
     - Decrypted/Internal Wii U Miis, same as their CFCD/CFSD counterparts past one number (Only matters for special Miis)
@@ -192,8 +196,10 @@ By order of console release. A difference of C vs S dictates not having vs havin
 - .ntag_internal
     - Decrypted Amiibo files
 ### Miitomo (Untested)
-- .mt, .miitomo
+- .miitomo
     - Miitomo QR Code Mii data after being decrypted
+- .miitomoe
+    - Miitomo QR Code Encrypted data.
 ### Switch/2
 - .nfcd, .nfsd .switchdb
     - Switch NAND format for the Mii Maker applet
@@ -202,6 +208,8 @@ By order of console release. A difference of C vs S dictates not having vs havin
 ### My Nintendo Mii Studio/Browser
 - .mnms, .studio, .localstorage
     - The format stored in localstorage in the Mii Studio website
+- .emnms
+    - The encrypted Studio image request format
 ### Other
 These formats are decodable and encodeable but not recommended as a file extension for use, as other formats are precisely equivalent and these specific names are either non specific, rarely used, or outdated.
 - .ver3
@@ -210,7 +218,7 @@ These formats are decodable and encodeable but not recommended as a file extensi
 ---
 - UFSD, MII, MIIGX, MAE, are unofficial names from the community.
 - MNMS and NCD/NSD are unofficial names sourced from [HEYimHeroic](https://github.com/HEYimHeroic)'s [Mii Data Files Repository](https://github.com/HEYimHeroic/MiiDataFiles), as well as documenting CFCD/FFCD, NFSD/NFCD, being highly likely official names but not used in any official capacity at this time.
-- CFED/FFED, TL/TL_ALT/TLE/TOMODACHILIFE, MT/MIITOMO, STUDIO/LOCALSTORAGE, are unofficial names presented by library authors due to no other official name being recognized but distinction being necessary.
+- CFED/FFED, TL/TL_ALT/TLE/TOMODACHILIFE, MT/MTE/MIITOPIA, MIITOMO/MIITOMOE, STUDIO/LOCALSTORAGE, are unofficial names presented by library authors due to no other official name being recognized but distinction being necessary.
 
 ## Other Useful Tools to Use with MiiJS
 Each of these is personally used and vetted by at least one of the library authors.

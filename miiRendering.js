@@ -37,8 +37,6 @@ async function encodePngImage(width, height, bgraPixels) {
 async function normalizeDecodedMiiForRender(data) {
     const normalized = structuredClone(await processMii.decodeMii(data));
 
-    // FFL's current local render path still expects legacy Wii U-era glasses
-    // indices, so backport canonical values before rendering.
     if (Number.isInteger(normalized?.glasses?.type)) {
         const renderType = normalized.glasses.type>8?backTables.switch.glassesTypes[normalized.glasses.type-9]:normalized.glasses.type;
         if (Number.isInteger(renderType)) {
@@ -545,6 +543,30 @@ async function renderRequestToImage(renderer, ffl, request, opts = {}) {
     }
 }
 
+function bytesToHex(bytes) {
+    let hex = "";
+    for (const byte of bytes) {
+        hex += byte.toString(16).padStart(2, "0");
+    }
+    return hex;
+}
+
+async function imageResponseToBytes(res) {
+    if (!res.ok) {
+        throw new Error(`Mii Studio render failed: ${res.status} ${res.statusText}`);
+    }
+
+    const arrayBuffer = await res.arrayBuffer();
+    return (typeof Buffer !== "undefined") ? Buffer.from(arrayBuffer) : new Uint8Array(arrayBuffer);
+}
+
+async function renderWithStudio(data, fullBody = false) {
+    data = structuredClone(await processMii.decodeMii(data));
+    data = processMii.encodeMii(data, MiiFormats.EMNMS);
+    const url=`https://studio.mii.nintendo.com/miis/image.png?data=${bytesToHex(data)}${fullBody?`&type=all_body`:``}&width=512&instanceCount=1`;
+    return await imageResponseToBytes(await fetch(url));
+}
+
 async function renderForNode(data, opts = {}) {
     await isInitialised;
     //We need some info from the buffer, and we also need to make sure it's in MNMS
@@ -593,14 +615,7 @@ async function renderForNode(data, opts = {}) {
     }
     else {//No FFL Resource, no textures or models to render with.
         console.warn(`FFL Resource is unavailable. See README.md for more information.`);
-        const gender = data?.general?.hasOwnProperty("gender") ? data.general.gender : 0;
-        const localSilhouette = `./silhouette${gender}.png`;
-        const packageSilhouette = `./node_modules/miijs/silhouette${gender}.png`;
-
-        if (fs.existsSync(localSilhouette)) {
-            return await fs.promises.readFile(localSilhouette);
-        }
-        return await fs.promises.readFile(packageSilhouette);
+        return await renderWithStudio(data, opts.fullBody);
     }
 
     addSkeletonScalingExtensions(THREE.Skeleton);
@@ -685,9 +700,7 @@ async function renderForBrowser(data, opts = {}) {
     }
     else {
         console.warn(`FFL Resource is unavailable. See README.md for more information.`);
-        const res = await fetch(`../silhouette${data?.general?.hasOwnProperty("gender") ? data.general.gender : 0}.png`);
-        if (!res.ok) throw new Error("Failed to load silhouette image");
-        return new Uint8Array(await res.arrayBuffer());
+        return await renderWithStudio(data, opts.fullBody);
     }
     const ffl = await FFL.initWithResource(resourceFile, ModuleFFL);
 
