@@ -266,13 +266,13 @@ async function makeQR(input, opts = {}) {
   } else if (Buffer.isBuffer(input) || input instanceof Uint8Array) {
     if (!image && !noRenderMii && detectMiiFormat(input)?.length > 0) {
       try {
-        const overlayPng = await renderMii(input, opts);
-        image = Buffer.isBuffer(overlayPng) ? overlayPng : Buffer.from(overlayPng);
         const temp = await decodeMii(input);
+        const overlayPng = await renderMii(temp, opts);
+        image = Buffer.isBuffer(overlayPng) ? overlayPng : Buffer.from(overlayPng);
         if (!label && temp?.meta?.name?.length > 0) label = temp.meta.name;
         if (temp?.meta?.type === "Special") isSpecial = true;
       } catch (e) {
-        console.log(e);
+        console.warn(e);
         image = null;
       }
     }

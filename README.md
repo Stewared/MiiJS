@@ -158,7 +158,16 @@ There is active research into dynamically extracting bodies. For a temporary tim
 - Special Miis **__must__** have the `meta.originalDevice` field set to the __matching__ device. In all other cases, a 3DS can scan a QR who's originalDevice is 4, and a Wii can scan a QR who's originalDevice is 3. However, in the case of Special Miis, to scan on 3DS you __must__ set `originalDevice` to **3**, and to scan on Wii U you __must__ set `originalDevice` to **4**. MiiJS will handle this automatically if you use the Mii class, just make sure to tell the Mii.toQR function you intend to scan on 3DS or Wii U (see ConsoleFormats enum).
 - ~~Special Miis require Sharing to be off on 3DS and Wii U~~ MiiJS should handle automatically
 - ~~Special Miis require Mingle to be off on Wii~~ MiiJS should handle automatically
-- QRs can sometimes not scan if encoded for the other console even when not Special. I'm not sure what the correlation is, but making sure to tell the Mii.toQR function which console you're scanning it on should be bulletproof. If you're using makeQR, encode to `MiiFormats.CFED` for 3DS, and `MiiFormats.FFED` for Wii U. These enforce making sure meta.originalDevice is 3 and 4 respectively, which should prevent all scan issues. Additionally, having Tomodachi Life fields present will encode to the Tomodachi Life QR code automatically if you use Mii.toQR and specify a 3DS QR. If using makeQR, encode to `MiiFormats.TLE`.
+- QRs can sometimes not scan if encoded for the other console even when not Special. I'm not sure what the correlation is, but making sure to tell the Mii.toQR function which console you're scanning it on should be bulletproof. If you're using makeQR, encode to `MiiFormats.CFED` for 3DS, and `MiiFormats.FFED` for Wii U. These enforce making sure meta.originalDevice is 3 and 4 respectively, which should prevent all scan issues. For game-specific 3DS QR output, use Tomodachi Life/TLE for `MiiFormats.TLE`, or Miitopia/MT/MTE for `MiiFormats.MTE` when Miitopia `mt.warCry` or Tomodachi Life `tl.catchphrase` can provide a war cry.
+
+### Tomodachi Life clothing rendering
+
+Decoded TLC, TLS, and TLE data preserves the clothing item IDs and their independent four-bit palette selectors in these fields:
+
+- `tl.clothing.outfit` and `tl.clothing.outfitColor`
+- `tl.clothing.hat` and `tl.clothing.hatColor`
+
+The item IDs are raw little-endian hex strings, while each color field is a catalog palette slot from 0 through 15. Regular clothes (outfit `0000`) are the exception: Tomodachi Life applies `general.favoriteColor` to that model at runtime. Objects decoded by older MiiJS versions do not contain the previously discarded selector bits; decode the original TLC, TLS, or TLE data again to recover them.
 
 ## Supported types
 By order of console release. A difference of C vs S dictates not having vs having checksums respectively.

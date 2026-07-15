@@ -23,7 +23,7 @@
     }
   },
   "scripts": {
-    "test": "set NODE_OPTIONS=--experimental-vm-modules&& jest --runInBand __tests__",
+    "test": "node --test spec/tl-clothing-selectors.test.mjs",
     "build": "node build.cjs",
     "serve": "node build.cjs --serve",
     "prepublishOnly": "npm run build"

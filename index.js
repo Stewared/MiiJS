@@ -7,7 +7,7 @@ import {lookupTables} from "./data.js";
 
 import util from "util";
 import isValidPath from "is-valid-path";
-import {fs} from "./platform.js";
+import {fs, Buffer} from "./platform.js";
 
 export * from "./formats.js";
 export * from "./miiProcess.js";
@@ -254,6 +254,43 @@ function setNestedValue(obj, key, value) {
         throw new Error(`${key} was not usable.`);
     }
 }
+function getTrimmedString(value) {
+    return typeof value === "string" ? value.trim() : "";
+}
+function cloneQrFields(value) {
+    if (typeof structuredClone === "function") {
+        try {
+            return structuredClone(value);
+        } catch (e) {}
+    }
+    return JSON.parse(JSON.stringify(value));
+}
+function hasTomodachiLifeQrData(mii) {
+    const tl = mii?.tl;
+    if (tl === null || tl === undefined) return false;
+    if (typeof tl !== "object") return true;
+    return Object.keys(tl).length > 0;
+}
+function getMiitopiaQrMii(mii) {
+    const warCry = getTrimmedString(mii?.mt?.warCry);
+    const catchphrase = getTrimmedString(mii?.tl?.catchphrase);
+    if (!warCry && !catchphrase) return mii;
+
+    const nextMii = cloneQrFields(mii);
+    if (!getTrimmedString(nextMii?.mt?.warCry)) {
+        nextMii.mt = nextMii.mt && typeof nextMii.mt === "object" ? nextMii.mt : {};
+        nextMii.mt.warCry = catchphrase;
+    }
+    return nextMii;
+}
+function get3dsQrFormatForMii(mii) {
+    if (hasTomodachiLifeQrData(mii)) return MiiFormats.TLE;
+    if (getTrimmedString(mii?.mt?.warCry) || getTrimmedString(mii?.tl?.catchphrase)) return MiiFormats.MTE;
+    return MiiFormats.CFED;
+}
+function normalizeQrDevice(device) {
+    return String(device || "").trim().toUpperCase().replace(/[\s_-]+/g, "");
+}
 function isValidURL(url){
     try{
         new URL(url);
@@ -452,8 +489,33 @@ class Mii {
 
     /** Render the mii to a QR code */
     async toQR(device="3DS",options = {}) {//The 3DS outsold the Wii U and has more Mii centric games
-        let mii = await encodeMii(this.fields, (["3DS","CFED","CFSD","CFCD"].includes(device))?(this.fields.hasOwnProperty("tl")?MiiFormats.TLE:MiiFormats.CFED):MiiFormats.FFED);
-        return makeQR(mii, options);
+        const normalizedDevice = normalizeQrDevice(device);
+        const isPlain3dsQr = ["3DS","CFED","CFSD","CFCD"].includes(normalizedDevice);
+        const isTomodachiQr = ["TOMODACHI","TOMODACHILIFE","TL","TLE"].includes(normalizedDevice);
+        const isMiitopiaQr = ["MIITOPIA","MT","MTE"].includes(normalizedDevice);
+        let qrFields = this.fields;
+        let qrFormat = MiiFormats.FFED;
+
+        if (isPlain3dsQr) {
+            qrFormat = MiiFormats.CFED;
+        } else if (isMiitopiaQr) {
+            qrFields = getMiitopiaQrMii(this.fields);
+            qrFormat = getTrimmedString(qrFields?.mt?.warCry) ? MiiFormats.MTE : MiiFormats.CFED;
+        } else if (isTomodachiQr) {
+            qrFormat = hasTomodachiLifeQrData(this.fields) ? MiiFormats.TLE : get3dsQrFormatForMii(this.fields);
+            if (qrFormat === MiiFormats.MTE) qrFields = getMiitopiaQrMii(this.fields);
+        }
+
+        let mii = await encodeMii(qrFields, qrFormat);
+        const qrOptions = { ...(options || {}) };
+        if (!qrOptions.image && !qrOptions.noRenderMii) {
+            const overlayPng = await renderMii(qrFields, qrOptions);
+            qrOptions.image = Buffer.isBuffer(overlayPng) ? overlayPng : Buffer.from(overlayPng);
+        }
+        if (!qrOptions.label && qrFields?.meta?.name?.length > 0) {
+            qrOptions.label = qrFields.meta.name;
+        }
+        return makeQR(mii, qrOptions);
     }
 
     /** Render the Mii to an image */

@@ -2104,13 +2104,22 @@ commonStructs[MiiFormats.TLC] = [
         text: "le"
     },
     {
+        word: true,
+        len: 32
+    },
+    {
+        name: "unknown",
+        len: 4
+    },
+    {
         name: "birthMonth",
         len: 4,
         max: 12
     },
     {
-        name: "unknown",
-        len: 6
+        name: "birthday",
+        len: 5,
+        max: 31
     },
     {
         name: "isAdult",
@@ -2118,26 +2127,31 @@ commonStructs[MiiFormats.TLC] = [
         bool: true
     },
     {
-        name: "birthday",
-        len: 5
+        name: "outfitColor",
+        len: 4,
+        max: 15
+    },
+    {
+        name: "hatColor",
+        len: 4,
+        max: 15
     },
     {
         name: "unknown",
-        len: 8
-    },
-
-    {
-        name: "hairDyeMode",
-        len: 2,
-        max: 2//0 Off, 1 Hair, 2 Hair & Eyebrows
+        len: 3
     },
     {
         name: "hairDye",
         len: 5
     },
     {
+        name: "hairDyeMode",
+        len: 2,
+        max: 2//0 Off, 1 Hair, 2 Hair & Eyebrows
+    },
+    {
         name: "unknown",
-        len: 97
+        len: 96
     },
     {
         name: "catchphrase",
@@ -3545,7 +3559,9 @@ const mappings = {
     'islandName': 'tl.island.name',
     'isAdult': 'tl.isAdult',
     'outfitId': 'tl.clothing.outfit',
+    'outfitColor': 'tl.clothing.outfitColor',
     'hatId': 'tl.clothing.hat',
+    'hatColor': 'tl.clothing.hatColor',
     'unknownFlags': 'tl.unknownFlags',
 
     //Miitomo
@@ -3669,7 +3685,9 @@ const defaultMappings = {
     'lastName': 'no name',
     'islandName': 'no name',
     'outfitId': '0000',
+    'outfitColor': 0,
     'hatId': 'FFFF',
+    'hatColor': 0,
     'voicePitch': 50,
     'voiceSpeed': 50,
     'voiceQuality': 50,
