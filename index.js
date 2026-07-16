@@ -2,6 +2,7 @@ import * as miiFormats from "./formats.js";
 import * as miiProcess from "./miiProcess.js";
 
 import * as qrTools from "./qrTools.js";
+import { normalizeGlassesTypeFor3DSRender } from "./renderNormalization.js";
 
 import {lookupTables} from "./data.js";
 
@@ -12,6 +13,7 @@ import {fs, Buffer} from "./platform.js";
 export * from "./formats.js";
 export * from "./miiProcess.js";
 export * from "./qrTools.js";
+export * from "./renderNormalization.js";
 
 const { encodeMii, decodeMii, detectMiiFormat } = miiProcess;
 const { mappings, MiiFormats, ConsoleFormats } = miiFormats;
@@ -569,6 +571,7 @@ export {
     setAs,
     kidomatic,
     makeMiiChild,
+    normalizeGlassesTypeFor3DSRender,
 
     getNestedValue,
     setNestedValue,
@@ -603,6 +606,7 @@ export default{
     setAs,
     kidomatic,
     makeMiiChild,
+    normalizeGlassesTypeFor3DSRender,
 
     FavoriteColors,
 

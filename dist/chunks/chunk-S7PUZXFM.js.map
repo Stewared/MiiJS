@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../renderNormalization.js"],
+  "sourcesContent": ["import { backTables } from \"./data.js\";\n\nconst LEGACY_GLASSES_TYPE_MAX = 8;\nconst MODERN_GLASSES_TYPE_MAX = 19;\n\n/**\n * Convert a Mii glasses type to the legacy range used by the 3DS-era FFL/CFL\n * resources. Switch-era formats add types 9-19, which have MiiJS-supported\n * legacy equivalents in the same table used by MiiJS format backports.\n *\n * @param {number} type glasses type from a decoded Mii\n * @returns {number} glasses type in the range 0-8\n */\nexport function normalizeGlassesTypeFor3DSRender(type) {\n    if (!Number.isInteger(type) || type < 0 || type > MODERN_GLASSES_TYPE_MAX) {\n        throw new RangeError(`Unsupported Mii glasses type ${JSON.stringify(type)}; expected 0-19`);\n    }\n    return type <= LEGACY_GLASSES_TYPE_MAX\n        ? type\n        : backTables.switch.glassesTypes[type - (LEGACY_GLASSES_TYPE_MAX + 1)];\n}\n"],
+  "mappings": "gFAAAA,IAEA,IAAMC,EAA0B,EAC1BC,EAA0B,GAUzB,SAASC,EAAiCC,EAAM,CACnD,GAAI,CAAC,OAAO,UAAUA,CAAI,GAAKA,EAAO,GAAKA,EAAOF,EAC9C,MAAM,IAAI,WAAW,gCAAgC,KAAK,UAAUE,CAAI,CAAC,iBAAiB,EAE9F,OAAOA,GAAQH,EACTG,EACAC,EAAW,OAAO,aAAaD,GAAQH,EAA0B,EAAE,CAC7E",
+  "names": ["init_globals_browser", "LEGACY_GLASSES_TYPE_MAX", "MODERN_GLASSES_TYPE_MAX", "normalizeGlassesTypeFor3DSRender", "type", "backTables"]
+}

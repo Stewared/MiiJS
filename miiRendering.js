@@ -5,7 +5,7 @@ const BGRA8Unorm = 'bgra8unorm';
 
 import * as processMii from './miiProcess.js';
 import { MiiFormats } from './formats.js';
-import {backTables} from "./data.js";
+import { normalizeGlassesTypeFor3DSRender } from "./renderNormalization.js";
 
 import { isNode } from './platform.js';
 
@@ -38,10 +38,7 @@ async function normalizeDecodedMiiForRender(data) {
     const normalized = structuredClone(await processMii.decodeMii(data));
 
     if (Number.isInteger(normalized?.glasses?.type)) {
-        const renderType = normalized.glasses.type>8?backTables.switch.glassesTypes[normalized.glasses.type-9]:normalized.glasses.type;
-        if (Number.isInteger(renderType)) {
-            normalized.glasses.type = renderType;
-        }
+        normalized.glasses.type = normalizeGlassesTypeFor3DSRender(normalized.glasses.type);
     }
 
     return normalized;
