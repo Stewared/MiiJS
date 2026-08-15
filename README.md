@@ -5,7 +5,7 @@ Build once, work with Miis from any console.
 
 Powers [https://infinimii.com/](InfiniMii), a website that lets you do everything MiiJS does from a GUI.
 
-*Rendering powered by [FFL.js](https://github.com/ariankordi/FFL.js/)*
+*Rendering uses Tomodachi Life RomFS body/headwear assets plus `CFL_Res.dat`.*
 ## Installation
 MiiJS works in both browser and Node.js, and in both ESM and CJS.
 
@@ -20,7 +20,6 @@ MiiJS works in both browser and Node.js, and in both ESM and CJS.
 ### Browser
 Download the latest release zip and serve it unzipped however you like, replace the paths with your relevant path.
 ```html
-<script src="./fflModule.cjs"></script><!--You only need this import if you're rendering, see the section on FFLResHigh.dat-->
 <script type="module">
     import MiiJS from "./miijs.browser.js"; //miijs.browser.esm.js available as well
     //Code to interact with MiiJS
@@ -86,7 +85,7 @@ JohnDoe.set("height", await centimetersToMiiHeight(175));//Set JohnDoe's Height 
 ### Enums
 - MiiFormats | An enum of all available Mii Formats to decode and encode to
 - ConsoleFormats | An enum of all available console types for functions that need a specific console (getAs/setAs, instructions)
-- FFLExpression | An enum of the different expression types the Mii face can render. Passed through from FFL.js (see Credits), which MiiJS uses as a dependency for rendering.
+- FFLExpression | Legacy expression enum retained for API compatibility. Tomodachi rendering currently uses the normal CFL face texture layout.
 - FavoriteColors | An array of favorite color human names to Mii favoriteColor ID
 
 ## Full Function/Variable List
@@ -105,10 +104,10 @@ Debug values enable extra logging to help figure out why something is breaking a
     - async Mii.setAs(console, path, value) | Set as if selecting an item on that console's Mii Maker, value is [page, countFromTheLeft, countFromTheTop], or [countFromTheLeft, countFromTheTop]
     - async Mii.getAs(console, path) | Get the value as if seeing the item on that console's Mii Maker, see setAs for what value returns
     - Mii.encode(format) | Encodes the Mii to that binary format. Returns a Promise only for optional async encoders such as encrypted QR formats.
-    - async Mii.toQR(options) | Returns a buffer containing a QR code for that Mii, scannable by the 3DS or Wii U. Renders the Mii as an icon for the QR if FFLResHigh.dat is present.
+    - async Mii.toQR(options) | Returns a buffer containing a QR code for that Mii, scannable by the 3DS or Wii U. Renders the Mii as an icon for the QR when Tomodachi RomFS assets and CFL_Res.dat are available.
         - Options values include, size: resolution, image: icon to use, noRenderMii: set to true to not render the Mii icon, label: label text to use instead of the Mii name. Additional passthrough options from [qr-code-styling](https://github.com/kozakdenys/qr-code-styling): qrOptions, dotsOptions, cornersSquareOptions, cornersDotsOptions, backgroundOptions. See Mii.render for more available options.
-    - async Mii.render(fullBodyRender, options) | Returns a buffer containing a render of that Mii, IF FFLResHigh.dat is in the project directory
-        - Options values include, fullBody: Render the full body of the Mii instead of just the head, expression: FFLExpression, size: size of the image. bodyPath: Path to use for the body models instead of the default. fflResBuffer: A buffer containing the FFL Resource. fflResPath: A path to the location of the FFL Resource.
+    - async Mii.render(fullBodyRender, options) | Returns a buffer containing a Tomodachi-style render of that Mii.
+        - Options values include, fullBody: Render the full body of the Mii instead of just the head, expression: FFLExpression, size: size of the image, tomodachiRomfs: path to a Tomodachi `romFS` folder, cflResPath: path to CFL_Res.dat.
     - async Mii.insertIntoAmiibo(amiiboDump) | Provide a buffer containing the Amiibo exactly as it is on the tag, this function returns the same Amiibo with your Mii inserted
     - async Mii.toInstructions(console) | Provides a JSON object containing human readable sentences and directions to recreate the Mii on that console
 - async insertMiiIntoAmiibo(amiiboDump, mii) | See Mii.insertIntoAmiibo
@@ -139,20 +138,20 @@ Debug values enable extra logging to help figure out why something is breaking a
 - async renderMii(mii, options) | See Mii.render
 - FFLExpression | See enums
 - scanQR(buffer) | Provide a buffer containing a QR code, returns the buffer the QR code represents.
-- async makeQR(buffer, options) | Provide a buffer, this outputs a QR code with that buffer. If the buffer is a recognized Mii, and FFLResHigh.dat is present, this will be rendered as an icon for the QR. See Mii.toQR for options.
+- async makeQR(buffer, options) | Provide a buffer, this outputs a QR code with that buffer. If the buffer is a recognized Mii and Tomodachi render assets are present, this will be rendered as an icon for the QR. See Mii.toQR for options.
 - getNestedValue(object, path) | Get the value of an object down a path, returns null if any step of the path is undefined.
 - setNestedValue(object, path, value) | Set the value of an object down a path, creating any steps necessary if undefined.
 - deleteNestedValue(object, path) | Deletes the key of an object down a path.
 - getKeyByValue(object, value) | Returns the key associated with that value, useful for backtracing enums.
 - FavoriteColors | See enums
 
-## FFLResHigh.dat
-FFLResHigh.dat provides the necessary models and textures to build a 3D model of the Mii. This will not be provided by the library but can be provided by placing it in the directory of the project calling MiiJS. By providing FFLResHigh.dat, you can then render Miis locally without using Studio. If you do not have or do not provide FFLResHigh.dat to your local project, rendering is not possible via MiiJS at this time.
-### Finding FFLResHigh.dat
-Any version of AFLResHigh.dat will work as well, renamed to FFLResHigh.dat.
-You can find FFLResHigh using a Wii U with an FTP program installed at `sys/title/0005001b/10056000/content/FFLResHigh.dat`. From a Miitomo install, it can be found in the cache at `res/asset/model/character/mii/AFLResHigh_2_3.dat`.
-### Body Rendering
-There is active research into dynamically extracting bodies. For a temporary time being, these are provided here, as the best source to find them at is ultimately [Arian Kordi's repository here](https://github.com/ariankordi/ffl-raylib-samples/tree/master/models) anyway. For now, they just work, but please keep in mind that in as near a future as I can manage, these files will be removed from the repo and you will need to extract these similar to FFLResHigh as well.
+## Tomodachi Rendering Assets
+Node rendering uses `CFL_Res.dat` for face feature textures and a Tomodachi Life `romFS` folder for the native body, head, and headwear CGFX models.
+
+Useful options:
+- `tomodachiRomfs`: path to a `romFS` folder containing `model/body`, `model/headwear`, and `model/obj/obj_mHead.bin.dat`
+- `cflResPath`: path to `CFL_Res.dat`
+- `tomodachiBodyId` / `tomodachiHeadwearId`: optional item ids to override the outfit or hat stored on the Mii
 
 ## Troubleshooting
 - Special Miis **__must__** have the `meta.originalDevice` field set to the __matching__ device. In all other cases, a 3DS can scan a QR who's originalDevice is 4, and a Wii can scan a QR who's originalDevice is 3. However, in the case of Special Miis, to scan on 3DS you __must__ set `originalDevice` to **3**, and to scan on Wii U you __must__ set `originalDevice` to **4**. MiiJS will handle this automatically if you use the Mii class, just make sure to tell the Mii.toQR function you intend to scan on 3DS or Wii U (see ConsoleFormats enum).
@@ -239,7 +238,6 @@ Each of these is personally used and vetted by at least one of the library autho
 
 ## Credits
 - [HEYimHeroic](https://github.com/HEYimHeroic)'s various work and documentation across many years and articles were and continue to be an invaluable resource to MiiJS' development.
-- [Arian K.](https://github.com/ariankordi)'s [JSFiddles](https://jsfiddle.net/u/arian_/fiddles/) (+ [repo](https://github.com/ariankordi/my-jsfiddles)) were an immense help for finding obscure processes and his [FFL.js](https://github.com/ariankordi/FFL.js/) is what makes rendering possible
 
 ## Disclaimer
 Miis, DS, Wii, 3DS, Wii U, Amiibo, Tomodachi Life, Miitomo, Switch, Switch 2, My Nintendo, Mii Studio, and anything else similar is owned fully by Nintendo of which this library and its authors do not represent.

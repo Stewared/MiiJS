@@ -2258,9 +2258,35 @@ commonStructs[MiiFormats.TLC] = [
         len: 8
     },
     {
-        name: "unknownFlags",
+        name: "unknownFlags0",
         hex: true,
-        len: 152
+        len: 48
+    },
+    {
+        name: "unknownFlags1",
+        hex: true,
+        len: 16
+    },
+    {
+        word: true,
+        len: 16
+    },
+    {
+        name: "interiorLowBits",
+        len: 5
+    },
+    {
+        name: "interiorId",
+        len: 4
+    },
+    {
+        name: "interiorHighBits",
+        len: 7
+    },
+    {
+        name: "unknownFlags2",
+        hex: true,
+        len: 72
     },
     {
         name: "islandId3",
@@ -3562,7 +3588,12 @@ const mappings = {
     'outfitColor': 'tl.clothing.outfitColor',
     'hatId': 'tl.clothing.hat',
     'hatColor': 'tl.clothing.hatColor',
-    'unknownFlags': 'tl.unknownFlags',
+    'unknownFlags0': 'tl.unknownFlags.beforeInteriorWord',
+    'unknownFlags1': 'tl.unknownFlags.beforeInterior',
+    'interiorLowBits': 'tl.unknownFlags.interiorLowBits',
+    'interiorId': 'tl.apartment.interior',
+    'interiorHighBits': 'tl.unknownFlags.interiorHighBits',
+    'unknownFlags2': 'tl.unknownFlags.afterInterior',
 
     //Miitomo
     'allColor': 'miitomo.clothing.color',
@@ -3699,7 +3730,12 @@ const defaultMappings = {
     'personalityAttitude': 4,
     'personalityOverall': 4,
     'isAdult': true,
-    'unknownFlags': '045D3FB91CD3040D3DC07600FEFF0F20FFFF0F'//Donor flags from one of my Miis, I don't know what's in these flags but without them the Mii won't load so here's mine
+    'unknownFlags0': '045D3FB91CD3',
+    'unknownFlags1': '040D',
+    'interiorLowBits': 29,
+    'interiorId': 1,
+    'interiorHighBits': 96,
+    'unknownFlags2': '7600FEFF0F20FFFF0F'//Donor flags from one of my Miis, I don't know what's in these flags but without them the Mii won't load so here's mine
 };
 
 export {

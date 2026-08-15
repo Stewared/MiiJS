@@ -16,13 +16,6 @@ const CRC32_TABLE = (() => {
 })();
 
 const browserZipFiles = [
-  {
-    source: './node_modules/ffl.js/ffl-emscripten.cjs',
-    zipName: 'fflModule.cjs'
-  },
-  { source: './node_modules/ffl.js/ffl-emscripten.wasm' },
-  { source: './miiMaleBody.glb' },
-  { source: './miiFemaleBody.glb' },
   { source: './README.md' },
   { source: './silhouette0.png' },
   { source: './silhouette1.png' }
@@ -211,11 +204,6 @@ const nodeShimPlugin = {
       build.onResolve({ filter: new RegExp(`^${mod}$`) }, () => shim("shims/empty.js"));
     }
 
-    // If you still reference the old FFL emscripten CJS file:
-    build.onResolve(
-      { filter: /ffl\.js\/examples\/ffl-emscripten-single-file\.cjs$/ },
-      () => shim("shims/empty.js")
-    );
   }
 };
 

@@ -66,7 +66,6 @@
     "esbuild": "^0.27.3",
     "events": "^3.3.0",
     "fetch": "^1.1.0",
-    "ffl.js": "github:ariankordi/FFL.js#3a1236753eba69c9260bfc46f840079cff75019c",
     "is-jpg": "^3.0.0",
     "is-png": "^3.0.1",
     "is-valid-path": "^0.1.1",
