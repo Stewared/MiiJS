@@ -4,6 +4,9 @@ import { createCipheriv, createDecipheriv, randomBytes } from "./platform.js";
 /** AES-128-CCM key used for encrypting/decrypting Mii QR code data. */
 const AES_CCM_KEY = new Uint8Array([0x59, 0xFC, 0x81, 0x7E, 0x64, 0x46, 0xEA, 0x61, 0x90, 0x34, 0x7B, 0x20, 0xE9, 0xBD, 0xCE, 0x52]);
 
+/** AES-128-CCM key used for the Switch 2 QR StoreData extension. */
+const SWITCH2_AES_CCM_KEY = new Uint8Array([0xA9, 0x3C, 0xB1, 0x2E, 0x94, 0x86, 0x1A, 0xC1, 0xD0, 0x74, 0xBB, 0x60, 0x19, 0xFD, 0x0E, 0x92]);
+
 /**
 * Key used for Miitomo/Tomodachi Life QR code encryption.
 * From Arian Kordi: https://github.com/ariankordi/my-jsfiddles/blob/c833be14f1674240e310453cdfa3db5ede53e059/mii-tomo-dachi-topia-qr-tool/script.js#L30
@@ -116,6 +119,53 @@ function encryptAesCcm(storeData) {
   return Uint8Cat(wrappedID, encryptedContentCorrected, tag);
 }
 
+function decryptSwitch2Mii(data) {
+  const uint8Data = data instanceof Uint8Array ? data : new Uint8Array(data);
+  if (uint8Data.length !== 0x90 || uint8Data[0x70] !== 0x11) {
+    throw new Error(`Invalid Switch 2 Mii QR payload.`);
+  }
+  const storeData = decryptAesCcm(uint8Data.subarray(0, 0x70));
+  if (encryptAesCcm(storeData).some((byte, index) => byte !== uint8Data[index])) {
+    throw new Error(`Invalid Switch 2 Mii QR StoreData.`);
+  }
+  const nonce = Uint8Cat(uint8Data.subarray(0, 8), new Uint8Array(4));
+  const extension = AES_CCM.decrypt(
+    uint8Data.subarray(0x71),
+    SWITCH2_AES_CCM_KEY,
+    nonce,
+    undefined,
+    16
+  );
+  if (
+    AES_CCM.encrypt(extension, SWITCH2_AES_CCM_KEY, nonce, undefined, 16)
+      .some((byte, index) => byte !== uint8Data[index + 0x71])
+    || extension[0] !== 0x01
+    || extension.subarray(9).some(byte => byte !== 0)
+  ) {
+    throw new Error(`Invalid Switch 2 Mii QR extension.`);
+  }
+  return Buffer.from(Uint8Cat(storeData, extension.subarray(1, 9)));
+}
+
+function encryptSwitch2Mii(data) {
+  const uint8Data = data instanceof Uint8Array ? data : new Uint8Array(data);
+  if (uint8Data.length !== 0x68) {
+    throw new Error(`Invalid Switch 2 decrypted Mii payload.`);
+  }
+  const encryptedBase = encryptAesCcm(uint8Data.subarray(0, 0x60));
+  return Buffer.from(Uint8Cat(
+    encryptedBase,
+    new Uint8Array([0x11]),
+    AES_CCM.encrypt(
+      Uint8Cat(new Uint8Array([0x01]), uint8Data.subarray(0x60), new Uint8Array(6)),
+      SWITCH2_AES_CCM_KEY,
+      Uint8Cat(encryptedBase.subarray(0, 8), new Uint8Array(4)),
+      undefined,
+      16
+    )
+  ));
+}
+
 function decryptMii(data) {
   const uint8Data = data instanceof Uint8Array ? data : new Uint8Array(data);
   
@@ -143,6 +193,7 @@ function decryptMii(data) {
       const dataForCrc = encryptedForCrc.subarray(0, offsetForCrc);
       
       const crcExpected = crc32(dataForCrc);
+      if (crcActual !== crcExpected) throw new Error("Invalid Mii QR extra-data checksum");
       return Buffer.from(Uint8Cat(storeData, extraData));
     } catch {
       return Buffer.from(storeData);
@@ -246,6 +297,8 @@ function decryptStudio2(encryptedMNMS) {
 export {
   decryptMii,
   encryptMii,
+  decryptSwitch2Mii,
+  encryptSwitch2Mii,
   miiCrcCalc,
   
   encryptStudio2,

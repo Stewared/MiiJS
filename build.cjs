@@ -16,7 +16,16 @@ const CRC32_TABLE = (() => {
 })();
 
 const browserZipFiles = [
+  {
+    source: './node_modules/ffl.js/ffl-emscripten.cjs',
+    zipName: 'fflModule.cjs'
+  },
+  { source: './node_modules/ffl.js/ffl-emscripten.wasm' },
+  { source: './node_modules/ffl.js/LICENSE', zipName: 'FFL_LICENSE' },
+  { source: './miiMaleBody.glb' },
+  { source: './miiFemaleBody.glb' },
   { source: './README.md' },
+  { source: './THIRD_PARTY_NOTICES.md' },
   { source: './silhouette0.png' },
   { source: './silhouette1.png' }
 ];
@@ -204,6 +213,11 @@ const nodeShimPlugin = {
       build.onResolve({ filter: new RegExp(`^${mod}$`) }, () => shim("shims/empty.js"));
     }
 
+    build.onResolve(
+      { filter: /ffl\.js\/examples\/ffl-emscripten-single-file\.cjs$/ },
+      () => shim("shims/empty.js")
+    );
+
   }
 };
 
@@ -346,7 +360,7 @@ async function serve() {
                         res.end('Server error: ' + error.code);
                     }
                 } else {
-                    res.writeHead(200, { 
+                    res.writeHead(200, {
                         'Content-Type': contentType,
                         'Access-Control-Allow-Origin': '*'
                     });

@@ -1,0 +1,1804 @@
+{
+  "source": "kmm/kmWait00.vpl",
+  "frame": 0,
+  "references": [
+    {
+      "animal": "Bull",
+      "bodyAsset": "models/kmBodyCowFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 986,
+          "position": [
+            6.8745911118703535,
+            8.882706568811978,
+            -1.2313720761379159
+          ],
+          "normal": [
+            0.9586567754747669,
+            0.2805456378239696,
+            0.04765849278213141
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 864,
+          "position": [
+            4.9717709977389175,
+            5.650071207777292,
+            -0.20890161211730174
+          ],
+          "normal": [
+            -0.8474822235635149,
+            0.5254727722965735,
+            0.07518142269732578
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 808,
+          "position": [
+            5.005357777486166,
+            4.68091142604396,
+            -0.17086282543536946
+          ],
+          "normal": [
+            -0.9917942583950972,
+            0.1096649816459724,
+            0.06570951845134648
+          ],
+          "influences": [
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftFingerBase",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 765,
+          "position": [
+            -6.874579693105867,
+            8.881937494391694,
+            -1.2308789055713376
+          ],
+          "normal": [
+            -0.9586554902362274,
+            0.2805503897270925,
+            0.04765637275239138
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 644,
+          "position": [
+            -4.971566372320439,
+            5.649156627807249,
+            -0.2083207849806037
+          ],
+          "normal": [
+            0.8474838245420824,
+            0.5254704373450493,
+            0.07517969550302561
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 589,
+          "position": [
+            -5.004968620396534,
+            4.679652720175925,
+            -0.1705105700925751
+          ],
+          "normal": [
+            0.9917945715712043,
+            0.10966187901524956,
+            0.0657099695079524
+          ],
+          "influences": [
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightFingerBase",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 137,
+          "position": [
+            2.858501347228346,
+            7.140525479179096,
+            2.239175586129411
+          ],
+          "normal": [
+            0.5609117774075717,
+            -0.033570593030521956,
+            0.8271946525752314
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 55,
+          "position": [
+            1.3813991211494807,
+            9.166114857992687,
+            1.8334843919280122
+          ],
+          "normal": [
+            0.2918966039108998,
+            -0.20212144826922543,
+            0.9348493422872126
+          ],
+          "influences": [
+            {
+              "bone": "Spine",
+              "weight": 0.5
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Fox",
+      "bodyAsset": "models/kmBodyFoxFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 360,
+          "position": [
+            2.238799787101773,
+            6.697375913494589,
+            -0.8515454322162763
+          ],
+          "normal": [
+            -0.8817904539254792,
+            -0.3262222206325175,
+            -0.3406239247784668
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 297,
+          "position": [
+            3.456325914311738,
+            4.864790533149458,
+            -0.9039314308225752
+          ],
+          "normal": [
+            -0.1514523263171712,
+            0.07619585072936516,
+            -0.9855234067158148
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 256,
+          "position": [
+            -2.2922233231976104,
+            6.507968101211293,
+            -0.8361621695986183
+          ],
+          "normal": [
+            0.5872242259911907,
+            -0.19503465450644603,
+            0.7855757073322712
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 168,
+          "position": [
+            -3.44223657602341,
+            4.859394727920524,
+            -0.9064931979352262
+          ],
+          "normal": [
+            0.15444136686002952,
+            0.07952577037517457,
+            -0.984796179952299
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 632,
+          "position": [
+            0.901647424576909,
+            3.0178147896511516,
+            -1.2864367472437137
+          ],
+          "normal": [
+            -0.17157346533390241,
+            -0.7682006421441585,
+            -0.6167903366644282
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftUpLeg",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 742,
+          "position": [
+            -1.3644501017198771,
+            8.663391743487228,
+            -1.246405271989926
+          ],
+          "normal": [
+            -0.47128380009770704,
+            -0.2023436786383293,
+            -0.8584571133612751
+          ],
+          "influences": [
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightShoulder",
+              "weight": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Wolf",
+      "bodyAsset": "models/kmBodyWolFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 206,
+          "position": [
+            2.238799787101773,
+            6.697375913494589,
+            -0.8515454322162763
+          ],
+          "normal": [
+            -0.8817904537856366,
+            -0.32622222101336834,
+            -0.34062392477573544
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 117,
+          "position": [
+            3.456325914311738,
+            4.864790533149458,
+            -0.9039314308225752
+          ],
+          "normal": [
+            -0.15145228271517433,
+            0.07619585979219219,
+            -0.9855234127157464
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 341,
+          "position": [
+            -2.2280970167345573,
+            6.694089817408116,
+            -0.8444926359847178
+          ],
+          "normal": [
+            0.8876939973816129,
+            -0.3415345827354923,
+            -0.3087936136132776
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 316,
+          "position": [
+            -3.327006793414641,
+            4.977550550125926,
+            0.18281637739371748
+          ],
+          "normal": [
+            -0.1610537458894392,
+            0.45059273248586684,
+            0.8780819326041847
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 516,
+          "position": [
+            0.901647424576909,
+            3.0178147896511516,
+            -1.2864367472437137
+          ],
+          "normal": [
+            -0.17157345032054985,
+            -0.768200672431796,
+            -0.6167903031180356
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftUpLeg",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 888,
+          "position": [
+            1.8775250063199587e-05,
+            10.526888474235406,
+            -1.7708883191876952
+          ],
+          "normal": [
+            3.109379059021435e-06,
+            0.8863054389386071,
+            -0.4631011432702089
+          ],
+          "influences": [
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            },
+            {
+              "bone": "Neck",
+              "weight": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Sheep",
+      "bodyAsset": "models/kmBodySheFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 44,
+          "position": [
+            2.101704495353233,
+            9.292355585885447,
+            0.4256334216591274
+          ],
+          "normal": [
+            0.5168250002159801,
+            0.13347553781213936,
+            0.845621783043408
+          ],
+          "influences": [
+            {
+              "bone": "LeftShoulder",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 625,
+          "position": [
+            2.238799787101773,
+            6.697375913494589,
+            -0.8515454322162763
+          ],
+          "normal": [
+            -0.8817904539254792,
+            -0.3262222206325175,
+            -0.3406239247784668
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 559,
+          "position": [
+            3.456325914311738,
+            4.864790533149458,
+            -0.9039314308225752
+          ],
+          "normal": [
+            -0.1514523263171712,
+            0.07619585072936516,
+            -0.9855234067158148
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 814,
+          "position": [
+            -2.2280970167345573,
+            6.694089817408116,
+            -0.8444926359847178
+          ],
+          "normal": [
+            0.8876939973073661,
+            -0.341534583945029,
+            -0.308793612488934
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 741,
+          "position": [
+            -3.44223657602341,
+            4.859394727920524,
+            -0.9064931979352262
+          ],
+          "normal": [
+            0.15444136686002952,
+            0.07952577037517457,
+            -0.984796179952299
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 415,
+          "position": [
+            -1.9550292902081303,
+            5.550859690838363,
+            0.5703447743643346
+          ],
+          "normal": [
+            0.9455161814761673,
+            -0.27678291972258806,
+            0.171436186135153
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.48
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.02
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 43,
+          "position": [
+            1.6852945966496236,
+            9.704492552369684,
+            0.712060330669377
+          ],
+          "normal": [
+            0.6080640004435646,
+            0.37693012584313557,
+            0.6987001156407853
+          ],
+          "influences": [
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftShoulder",
+              "weight": 0.44
+            },
+            {
+              "bone": "LeftArm",
+              "weight": 0.06
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Duck",
+      "bodyAsset": "models/kmBodyDucFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 313,
+          "position": [
+            2.823898851153931,
+            5.4770571786766595,
+            -0.8271166624531151
+          ],
+          "normal": [
+            0.8689969765492243,
+            0.39166119300018787,
+            -0.30240000768183967
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 239,
+          "position": [
+            2.9172232598891727,
+            3.9018923457289914,
+            0.29851667889922595
+          ],
+          "normal": [
+            0.6613687014958816,
+            0.4440737627700315,
+            0.60447492412913
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 26,
+          "position": [
+            -2.8162303219344227,
+            5.470992740310029,
+            -0.8239460220114376
+          ],
+          "normal": [
+            -0.8693630875296036,
+            0.3889694075950528,
+            -0.30481243740396907
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 60,
+          "position": [
+            -3.1077788993547,
+            3.6811581866835823,
+            -1.1022756270864638
+          ],
+          "normal": [
+            0.08918636446036561,
+            0.09981043453296352,
+            -0.9910013468975124
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 543,
+          "position": [
+            2.1663126086589877e-06,
+            4.7055459722593085,
+            1.9349802520794395
+          ],
+          "normal": [
+            -0.039322421965548894,
+            0.15578753213062382,
+            0.987007594683756
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.25
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.25
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 480,
+          "position": [
+            6.0032949167135596e-06,
+            5.686763160556837,
+            1.7132152635812528
+          ],
+          "normal": [
+            -0.01578322559455846,
+            0.32690458661045224,
+            0.9449255425920503
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.19999999
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.29999998
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Cat",
+      "bodyAsset": "models/kmBodyCatFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 354,
+          "position": [
+            2.238799787101773,
+            6.697375913494589,
+            -0.8515454322162763
+          ],
+          "normal": [
+            -0.8817904539254792,
+            -0.3262222206325175,
+            -0.3406239247784668
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 291,
+          "position": [
+            3.456325914311738,
+            4.864790533149458,
+            -0.9039314308225752
+          ],
+          "normal": [
+            -0.1514523263171712,
+            0.07619585072936516,
+            -0.9855234067158148
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 248,
+          "position": [
+            -2.2922233231976104,
+            6.507968101211293,
+            -0.8361621695986183
+          ],
+          "normal": [
+            0.5872242259911907,
+            -0.19503465450644603,
+            0.7855757073322712
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 159,
+          "position": [
+            -3.44223657602341,
+            4.859394727920524,
+            -0.9064931979352262
+          ],
+          "normal": [
+            0.15444136686002952,
+            0.07952577037517457,
+            -0.984796179952299
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 592,
+          "position": [
+            0.901647424576909,
+            3.0178147896511516,
+            -1.2864367472437137
+          ],
+          "normal": [
+            -0.17157346533390241,
+            -0.7682006421441585,
+            -0.6167903366644282
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftUpLeg",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 931,
+          "position": [
+            9.139848923345152e-06,
+            7.912046709362251,
+            1.7534701108210418
+          ],
+          "normal": [
+            -2.7205075583459216e-06,
+            -0.7473807955464841,
+            0.6643959259665153
+          ],
+          "influences": [
+            {
+              "bone": "Spine",
+              "weight": 0.5
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Rabbit",
+      "bodyAsset": "models/kmBodyBunFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 494,
+          "position": [
+            2.922929573291266,
+            5.589691204988464,
+            -0.762221752642593
+          ],
+          "normal": [
+            0.8016254424810904,
+            0.36373297917046454,
+            -0.4744417454554084
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 533,
+          "position": [
+            3.2381093256373985,
+            2.9188568728274893,
+            0.4093133704999383
+          ],
+          "normal": [
+            -0.11562424596612096,
+            -0.2617835997681199,
+            0.9581755479228277
+          ],
+          "influences": [
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftFingerBase",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 574,
+          "position": [
+            -2.875379555855704,
+            5.5605177494667135,
+            -0.5879887615031929
+          ],
+          "normal": [
+            -0.8999745664860505,
+            0.3864077204133555,
+            0.20182877218870374
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 697,
+          "position": [
+            -3.228507666063028,
+            2.9095044182432996,
+            0.4040174540266488
+          ],
+          "normal": [
+            0.11520966856157687,
+            -0.2855393206032908,
+            0.9514168532558915
+          ],
+          "influences": [
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightFingerBase",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 1001,
+          "position": [
+            -0.0024694320799364365,
+            1.964180065803474,
+            0.31167939000425265
+          ],
+          "normal": [
+            0.0014401376389239968,
+            -0.9625199702914591,
+            0.27120699252362496
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftUpLeg",
+              "weight": 0.25
+            },
+            {
+              "bone": "RightUpLeg",
+              "weight": 0.25
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 100,
+          "position": [
+            -0.8215019368241258,
+            7.4998553390493825,
+            -1.2217353111703038
+          ],
+          "normal": [
+            0.6013406089012086,
+            0.7905941875475213,
+            0.11554350999687774
+          ],
+          "influences": [
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            },
+            {
+              "bone": "Neck",
+              "weight": 0.26999998
+            },
+            {
+              "bone": "RightShoulder",
+              "weight": 0.22999999
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Mouse",
+      "bodyAsset": "models/kmBodyMouFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 660,
+          "position": [
+            2.922929573291266,
+            5.589691204988464,
+            -0.762221752642593
+          ],
+          "normal": [
+            0.8016254424810904,
+            0.36373297917046454,
+            -0.4744417454554084
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 713,
+          "position": [
+            2.5263759318689334,
+            3.6148918602627758,
+            0.11499190562252223
+          ],
+          "normal": [
+            -0.8914439759309805,
+            0.16758214982760986,
+            0.42100339765318034
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.48999998
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.51
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 505,
+          "position": [
+            -2.9157393973356363,
+            5.583373825035155,
+            -0.7593147458196148
+          ],
+          "normal": [
+            -0.8014563124436475,
+            0.3611804614535819,
+            -0.4766722705469746
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 544,
+          "position": [
+            -3.054199149581899,
+            3.687980275403933,
+            -0.8622675064628567
+          ],
+          "normal": [
+            0.29071669570374975,
+            0.02260159198605664,
+            -0.9565421950331251
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 179,
+          "position": [
+            -2.0462477612111813,
+            4.70235696042919,
+            -0.7612966552172595
+          ],
+          "normal": [
+            -0.9036772009398437,
+            0.25094240190970046,
+            -0.34698044242481396
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.25
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.25
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 299,
+          "position": [
+            -0.8215019368241258,
+            7.4998553390493825,
+            -1.2217353111703038
+          ],
+          "normal": [
+            -0.17719529462533384,
+            0.6461257126622472,
+            -0.742376852413479
+          ],
+          "influences": [
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            },
+            {
+              "bone": "Neck",
+              "weight": 0.26999998
+            },
+            {
+              "bone": "RightShoulder",
+              "weight": 0.22999999
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Bear",
+      "bodyAsset": "models/kmBodyBeaFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 133,
+          "position": [
+            3.654747067962223,
+            11.565018594754783,
+            0.8766458304178246
+          ],
+          "normal": [
+            -0.017219457642831903,
+            0.2842738783534646,
+            0.9585884687207364
+          ],
+          "influences": [
+            {
+              "bone": "LeftShoulder",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 792,
+          "position": [
+            6.491547047689311,
+            8.579738552017254,
+            -1.8815101845984445
+          ],
+          "normal": [
+            0.713660128249571,
+            0.17960763209600272,
+            -0.677074825879439
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 839,
+          "position": [
+            6.315934970831843,
+            5.537954133665636,
+            0.6781160224087568
+          ],
+          "normal": [
+            0.40437622573628335,
+            -0.019929709467394207,
+            0.9143755654761471
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 260,
+          "position": [
+            -3.6547291951239114,
+            11.564680768559114,
+            0.8768532858842379
+          ],
+          "normal": [
+            0.017221996520303602,
+            0.2842777713782714,
+            0.9585872686073281
+          ],
+          "influences": [
+            {
+              "bone": "RightShoulder",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 575,
+          "position": [
+            -6.491536719924454,
+            8.578963895299317,
+            -1.8810152257962205
+          ],
+          "normal": [
+            -0.7136589532594443,
+            0.17960706895141804,
+            -0.6770762137420829
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 712,
+          "position": [
+            -6.315732326548559,
+            5.537050035270022,
+            0.6786951896135989
+          ],
+          "normal": [
+            -0.40437797706705186,
+            -0.01992228645844413,
+            0.9143749527220365
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 171,
+          "position": [
+            -1.6250952825590008,
+            9.084189835391111,
+            2.6187465686202844
+          ],
+          "normal": [
+            -0.2690871367337938,
+            0.15405868170958972,
+            0.9507144868120565
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.28
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.22
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 516,
+          "position": [
+            -2.6291449735662087,
+            12.829684576332143,
+            0.8002085991999642
+          ],
+          "normal": [
+            -0.1160645925750987,
+            0.7866125355556423,
+            0.6064402107851191
+          ],
+          "influences": [
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            },
+            {
+              "bone": "Neck",
+              "weight": 0.01
+            },
+            {
+              "bone": "RightShoulder",
+              "weight": 0.48
+            },
+            {
+              "bone": "RightArm",
+              "weight": 0.01
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "animal": "Tiger",
+      "bodyAsset": "models/kmBodyTigFr.json",
+      "samples": [
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 1196,
+          "position": [
+            4.511638127562801,
+            8.287381657602191,
+            -1.4706207902642205
+          ],
+          "normal": [
+            -0.6927681790617651,
+            -0.310862894534794,
+            -0.6507199942224733
+          ],
+          "influences": [
+            {
+              "bone": "LeftArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 1091,
+          "position": [
+            6.427766877285585,
+            5.731142777589694,
+            0.6488050266226413
+          ],
+          "normal": [
+            0.3387301197439393,
+            0.13578531348906747,
+            0.931033970711559
+          ],
+          "influences": [
+            {
+              "bone": "LeftForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 890,
+          "position": [
+            -4.511629240419381,
+            8.286600060902856,
+            -1.470123034642274
+          ],
+          "normal": [
+            0.7037661280167088,
+            -0.41358354381779056,
+            -0.5776347369570907
+          ],
+          "influences": [
+            {
+              "bone": "RightArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 978,
+          "position": [
+            -6.427563535073897,
+            5.730238865663104,
+            0.6493827272488382
+          ],
+          "normal": [
+            -0.3432821229732267,
+            0.15232183706770092,
+            0.9267984905033646
+          ],
+          "influences": [
+            {
+              "bone": "RightForeArm",
+              "weight": 0.5
+            },
+            {
+              "bone": "RightHand",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 0,
+          "sourceVertex": 140,
+          "position": [
+            1.1042112799173696,
+            4.379156059706285,
+            -1.2906841970415983
+          ],
+          "normal": [
+            -0.21718987141545154,
+            -0.5556597592420612,
+            -0.8025402118981917
+          ],
+          "influences": [
+            {
+              "bone": "Hips",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftUpLeg",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "model": 0,
+          "mesh": 0,
+          "submesh": 1,
+          "sourceVertex": 443,
+          "position": [
+            1.4354367055465258,
+            10.203612245122516,
+            2.114871227709676
+          ],
+          "normal": [
+            0.3925245798569637,
+            -0.13346242125233357,
+            -0.9100067232287785
+          ],
+          "influences": [
+            {
+              "bone": "Spine",
+              "weight": 0.17
+            },
+            {
+              "bone": "Spine1",
+              "weight": 0.5
+            },
+            {
+              "bone": "LeftShoulder",
+              "weight": 0.32999998
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

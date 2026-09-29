@@ -1,5 +1,6 @@
 import { backTables, lookupTables, islandAddresses } from "./data.js";
-import { decryptMii, decryptStudio2, encryptMii, encryptStudio2 } from "./miiCrypto.js";
+import { decryptMii, decryptStudio2, decryptSwitch2Mii, encryptMii, encryptStudio2, encryptSwitch2Mii } from "./miiCrypto.js";
+import { decodeLtdMii, encodeLtdMii, isLtdMii } from "./ltd.js";
 import lodash from "lodash";
 
 let amiiboHandlerPromise;
@@ -371,6 +372,15 @@ const MiiFormats = /** @type {const} */ ({
         return 'ffcd';
     },
     /**
+    * Switch 2 encrypted Face Export Data Extended
+    */
+    FEDEX: 'fedex',
+    /**
+    * Face Store Data Extended. This is the logical 104-byte owner-Mii payload
+    * shared by decrypted Switch 2 QR data and Amiibo data.
+    */
+    FSDEX: 'fsdex',
+    /**
     * CTR Face Character Data
     * 3DS Miis, identical to FFCD.
     */
@@ -584,10 +594,15 @@ const MiiFormats = /** @type {const} */ ({
     },
 
     /**
+     * Tomodachi Life: Living the Dream ShareMii v2/v3 data.
+     */
+    LTD: 'ltd',
+
+    /**
      * Mii Creator Miis
      * @deprecated This is not an official file type, we are supporting it due to its widespread usage. Please use .CHARINFO instead.
      */
-    MIIC:'miic'
+    MIIC: 'miic'
 });
 
 /** Enum of consoles */
@@ -2359,6 +2374,93 @@ const formats = {
     [MiiFormats.CFCD]: lodash.cloneDeep(commonStructs[MiiFormats.FFCD]),
     [MiiFormats.CFSD]: lodash.cloneDeep(commonStructs[MiiFormats.FFSD]),
     [MiiFormats.CFED]: lodash.cloneDeep(commonStructs[MiiFormats.FFED]),
+    [MiiFormats.FEDEX]: {
+        len: 0x90,
+        decoder: decryptSwitch2Mii,
+        encoder: encryptSwitch2Mii,
+        preEncode: MiiFormats.FSDEX,
+        preProcess: (mii) => {
+            if (mii.meta?.type === "Special") mii.meta.type = "Default";
+            return mii;
+        }
+    },
+    [MiiFormats.FSDEX]: {
+        len: 0x68,
+        struct: [
+            ...commonStructs[MiiFormats.FFSD].struct,
+            {
+                name: "nfpFaceColor",
+                len: 8,
+                max: 9
+            },
+            {
+                name: "nfpHairColor",
+                len: 8,
+                max: 99
+            },
+            {
+                name: "nfpEyeColor",
+                len: 8,
+                max: 99
+            },
+            {
+                name: "nfpEyebrowColor",
+                len: 8,
+                max: 99
+            },
+            {
+                name: "nfpMouthColor",
+                len: 8,
+                max: 99
+            },
+            {
+                name: "nfpBeardColor",
+                len: 8,
+                max: 99
+            },
+            {
+                name: "nfpGlassesColor",
+                len: 8,
+                max: 99
+            },
+            {
+                name: "nfpGlassesType",
+                len: 8,
+                max: 19
+            }
+        ],
+        encoder: (dat) => Buffer.concat([
+            encoders.appendCrc(dat.subarray(0, 0x60)),
+            dat.subarray(0x60)
+        ]),
+        preProcess: (mii) => {
+            mii.nfpStoreDataExtension = {
+                faceColor: mii.face?.color ?? 0,
+                hairColor: mii.hair?.color ?? 1,
+                eyeColor: mii.eyes?.color ?? 8,
+                eyebrowColor: mii.eyebrows?.color ?? 1,
+                mouthColor: mii.mouth?.color ?? 19,
+                beardColor: mii.beard?.color ?? 8,
+                glassesColor: mii.glasses?.color ?? 8,
+                glassesType: mii.glasses?.type ?? 0
+            };
+            return processors.cffcdPreProcess(backPort(mii, "3ds"), 3);
+        },
+        postProcess: (mii) => {
+            mii = processors.cffcdPostProcess(mii);
+            mii.face.color = mii.nfpStoreDataExtension.faceColor;
+            mii.hair.color = mii.nfpStoreDataExtension.hairColor;
+            mii.eyes.color = mii.nfpStoreDataExtension.eyeColor;
+            mii.eyebrows.color = mii.nfpStoreDataExtension.eyebrowColor;
+            mii.mouth.color = mii.nfpStoreDataExtension.mouthColor;
+            mii.beard.color = mii.nfpStoreDataExtension.beardColor;
+            mii.glasses.color = mii.nfpStoreDataExtension.glassesColor;
+            mii.glasses.type = mii.nfpStoreDataExtension.glassesType;
+            delete mii.nfpStoreDataExtension;
+            mii.meta.nfpStoreDataExtension = true;
+            return mii;
+        }
+    },
 
     //Mii Creator
     [MiiFormats.MIIC]: {
@@ -3189,6 +3291,11 @@ const formats = {
             }
         ]
     },
+    [MiiFormats.LTD]: {
+        validator: isLtdMii,
+        decoder: decodeLtdMii,
+        encoder: encodeLtdMii
+    },
     //Mii Studio
     [MiiFormats.MNMS]: {
         len: 0x2e,
@@ -3440,19 +3547,19 @@ const formats = {
     //Amiibo
     [MiiFormats.NTAG]: {
         len: 540,
-        decoder: (dat) => extractMiiFromAmiibo(dat),
-        preEncode: MiiFormats.CFSD,
+        decoder: extractMiiFromAmiibo,
+        preEncode: MiiFormats.FSDEX,
         //QK, need to receive an Amiibo dump to insert into, encode Mii into CFSD, then insert into the Amiibo dump and return - same for other Amiibo types.
     },
     [MiiFormats.NTAG_ALT]: {
         len: 532,
-        decoder: (dat) => extractMiiFromAmiibo(dat),
-        preEncode: MiiFormats.CFSD,
+        decoder: extractMiiFromAmiibo,
+        preEncode: MiiFormats.FSDEX,
     },
     [MiiFormats.NTAG_INTERNAL]: {
         len: 520,
-        decoder: (dat) => dat.slice(76, 172),
-        preEncode: MiiFormats.CFSD,
+        decoder: async (dat) => (await loadAmiiboHandler()).extractMiiFromDecryptedAmiibo(dat),
+        preEncode: MiiFormats.FSDEX,
     }
 };
 const mappings = {
@@ -3620,7 +3727,17 @@ const mappings = {
     'miitomoInfo': 'miitomo',//Remove once Miitomo is understood better
 
     //Miitopia
-    'warCry':'mt.warCry'
+    'warCry':'mt.warCry',
+
+    //Switch 2 / Amiibo StoreData extension
+    'nfpFaceColor': 'nfpStoreDataExtension.faceColor',
+    'nfpHairColor': 'nfpStoreDataExtension.hairColor',
+    'nfpEyeColor': 'nfpStoreDataExtension.eyeColor',
+    'nfpEyebrowColor': 'nfpStoreDataExtension.eyebrowColor',
+    'nfpMouthColor': 'nfpStoreDataExtension.mouthColor',
+    'nfpBeardColor': 'nfpStoreDataExtension.beardColor',
+    'nfpGlassesColor': 'nfpStoreDataExtension.glassesColor',
+    'nfpGlassesType': 'nfpStoreDataExtension.glassesType'
 };
 
 formats[MiiFormats.CFCD].preProcess=(dat)=>processors.cffcdPreProcess(dat,3);

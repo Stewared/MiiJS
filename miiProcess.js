@@ -1,6 +1,4 @@
 import { formats, mappings, defaultMappings, forwardPort, backPort } from "./formats.js";
-import { lookupTables } from "./data.js";
-
 import { Buffer } from "./platform.js";
 
 import { scanQR } from "./qrTools.js";
@@ -137,20 +135,6 @@ function bytesFromText(str) {
 
 /** @typedef {import("./mii-jsdoc.js").Mii} MiiData */
 
-const canonical3DSGlassesTypes = new Set(lookupTables.glassesTypes);
-
-function formatUses3DSTranslation(formatName, visited = new Set()) {
-    if (!formatName || visited.has(formatName)) return false;
-    visited.add(formatName);
-
-    const format = formats[formatName];
-    if (!format) return false;
-    if (format.translation === "3ds") return true;
-    if (format.preEncode) return formatUses3DSTranslation(format.preEncode, visited);
-    return false;
-}
-
-
 function bufferToBitString(buf) {
     let out = '';
     for (let i = 0; i < buf.length; i++) {
@@ -173,7 +157,7 @@ function setNestedValue(obj, key, value) {
         target[lastKey] = value;
         return obj;
     }
-    catch (e) {
+    catch {
         throw new Error(`${key} was not usable.`);
     }
 }
@@ -190,7 +174,7 @@ function getNestedValue(obj, path) {
         }
         return current;
     }
-    catch (e) {
+    catch {
         return null;
     }
 }
@@ -274,8 +258,21 @@ function isMiiInFormat(buf, requireFormat, debug) {
 
     // Validate format
     requireFormat = requireFormat?.toLowerCase().replaceAll(".", '');
-    if (buf.length !== formats[requireFormat].len) {
-        if (debug) console.log(`The file length does not match ${requireFormat}, expected`, formats[requireFormat].len, "got", buf.length);
+    const format = formats[requireFormat];
+    if (!format) {
+        if (debug) console.log(`Unknown format ${requireFormat}`);
+        return false;
+    }
+    if (format.hasOwnProperty("validator")) {
+        try {
+            return Boolean(format.validator(buf, debug));
+        } catch (error) {
+            if (debug) console.log(`${requireFormat} validation failed: ${error.message}`);
+            return false;
+        }
+    }
+    if (buf.length !== format.len) {
+        if (debug) console.log(`The file length does not match ${requireFormat}, expected`, format.len, "got", buf.length);
         return false;
     }
 
@@ -371,7 +368,7 @@ function detectMiiFormat(buf, debug) {
  */
 function decodeMii(toDecode, debug) {
     // If data is already decoded, return - TODO: verifying the format here would be better than a single field check
-    if (toDecode?.general?.hasOwnProperty("favoriteColor")) return toDecode;
+    if (toDecode?.general?.hasOwnProperty("favoriteColor") || toDecode?.ltd) return toDecode;
 
     //Ensure Buffer, convert from hex string, file path string, URL path string
     toDecode = ensureBuffer(toDecode);
@@ -521,9 +518,15 @@ function decodeMii(toDecode, debug) {
     return obj;
 }
 function encodeMii(miiObject, targetFormat, debug) {
+    targetFormat = targetFormat?.toLowerCase().replaceAll(".", "");
     if (!formats[targetFormat]) {
         throw new Error(`Unknown format: ${targetFormat}`);
     }
+    const sourceObject = miiObject?.fields ?? miiObject;
+    if (sourceObject?.ltd && targetFormat !== "ltd") {
+        throw new Error("LTD CharInfoEx data cannot be converted to classic Mii formats without unsupported selector and favorite-color defaults. Encode as MiiFormats.LTD, or explicitly create a separate canonical Mii object.");
+    }
+    miiObject = sourceObject;
 
     if (!formats[targetFormat].hasOwnProperty("struct")) {
         if (!formats[targetFormat].hasOwnProperty("encoder")) {
@@ -531,6 +534,9 @@ function encodeMii(miiObject, targetFormat, debug) {
         }
         else {
             if (formats[targetFormat].hasOwnProperty("preEncode")) {
+                if (formats[targetFormat].hasOwnProperty("preProcess")) {
+                    miiObject = formats[targetFormat].preProcess(structuredClone(miiObject));
+                }
                 miiObject = encodeMii(miiObject, formats[targetFormat].preEncode);
                 if (isPromiseLike(miiObject)) {
                     return miiObject.then(encoded => formats[targetFormat].encoder(encoded));

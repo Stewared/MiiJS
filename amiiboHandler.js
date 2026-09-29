@@ -1,4 +1,4 @@
-// Takes Amiibo dumps that are either 532 bytes or 540 bytes, and manipulates a 96 byte FFSD Mii in/out of the dump from offset 0x4C.
+// Takes Amiibo dumps that are either 532 bytes or 540 bytes, and manipulates their FFSD Mii plus MiiNfpStoreDataExtension.
 // Ported from https://github.com/socram8888/amiitool
 import { Buffer, createCipheriv, createDecipheriv, createHmac } from "./platform.js";
 import {decodeMii,encodeMii} from "./miiProcess.js";
@@ -145,12 +145,37 @@ function encryptAmiibo(plain) {
     return tag;
 }
 
+function getMiiSettingsCrc32(decrypted) {
+    let crc=0xFFFFFFFF;
+    for(const byte of Buffer.concat([
+        decrypted.slice(0x4C, 0xAC),
+        decrypted.slice(0xBA, 0xD8)
+    ])){
+        crc^=byte;
+        for(let bit=0;bit<8;bit++) crc=(crc>>>1)^((crc&1)*0xEDB88320);
+    }
+    return (crc^0xFFFFFFFF)>>>0;
+}
+
+function extractMiiFromDecryptedAmiibo(decrypted) {
+    if(decrypted.readUInt32BE(0xD8)!==getMiiSettingsCrc32(decrypted)) return decrypted.slice(0x4C, 0xAC);
+    return Buffer.concat([
+        decrypted.slice(0x4C, 0xAC),// 96-byte FFSD Mii
+        decrypted.slice(0xBC, 0xC4)// MiiNfpStoreDataExtension
+    ]);
+}
+
 //Extract Mii data from an Amiibo dump
-function extractMiiFromAmiibo(dump) {
-    const tag = dump.slice(0, NFC3D_AMIIBO_SIZE);
-    const decrypted = decryptAmiibo(tag);
-    const miiData = decrypted.slice(76, 172);// Extract the 96 Bytes FFSD Mii
-    return Buffer.from(miiData);
+function extractMiiFromAmiibo(dump, options = {}) {
+    dump=isBuffer(dump);
+    if(!dump){
+        throw new Error(`Dump is not a valid Buffer type`);
+    }
+    const miiData = extractMiiFromDecryptedAmiibo(decryptAmiibo(dump.slice(0, NFC3D_AMIIBO_SIZE)));
+    if (options.legacyVer3Only === true) {
+        return miiData.slice(0, 0x60);
+    }
+    return miiData;
 }
 
 //Insert Mii data into an Amiibo dump
@@ -159,13 +184,13 @@ function insertMiiIntoAmiibo(dump, mii) {
     if(!dump){
         throw new Error(`Dump is not a valid Buffer type`);
     }
-    mii=decodeMii(mii);
-    let miiWithChecksum=encodeMii(mii,MiiFormats.FFSD);
+    const miiWithExtension=encodeMii(decodeMii(mii),MiiFormats.FSDEX);
     const decrypted = decryptAmiibo(dump.slice(0, NFC3D_AMIIBO_SIZE));//Decrypt the Amiibo
-    miiWithChecksum.copy(decrypted, 76);//Insert the Mii into Amiibo
-    const encrypted = encryptAmiibo(decrypted);//Reencrypt the Amiibo
+    miiWithExtension.slice(0, 0x60).copy(decrypted, 0x4C);//Insert the FFSD Mii into Amiibo
+    miiWithExtension.slice(0x60).copy(decrypted, 0xBC);//Preserve the modern colors and glasses type
+    decrypted.writeUInt32BE(getMiiSettingsCrc32(decrypted),0xD8);//CRC32 covers the 0x7E-byte Mii settings payload
     const result = Buffer.alloc(dump.length);
-    encrypted.copy(result, 0);
+    encryptAmiibo(decrypted).copy(result, 0);//Reencrypt the Amiibo
     if (dump.length > NFC3D_AMIIBO_SIZE) {
         dump.slice(NFC3D_AMIIBO_SIZE).copy(result, NFC3D_AMIIBO_SIZE);
     }
@@ -173,6 +198,8 @@ function insertMiiIntoAmiibo(dump, mii) {
 }
 
 export {
+    decryptAmiibo,
     insertMiiIntoAmiibo,
-    extractMiiFromAmiibo
+    extractMiiFromAmiibo,
+    extractMiiFromDecryptedAmiibo
 };

@@ -1,5 +1,8 @@
 import * as miiFormats from "./formats.js";
 import * as miiProcess from "./miiProcess.js";
+import * as ltd from "./ltd.js";
+import * as miiConversion from "./miiConversion.js";
+import * as dillon from "./dillon.js";
 
 import * as qrTools from "./qrTools.js";
 import { normalizeGlassesTypeFor3DSRender } from "./renderNormalization.js";
@@ -14,6 +17,17 @@ export * from "./formats.js";
 export * from "./miiProcess.js";
 export * from "./qrTools.js";
 export * from "./renderNormalization.js";
+export * from "./ltd.js";
+export * from "./miiConversion.js";
+export {
+    DILLON_AMIIMAL_TYPES,
+    applyDillonAppearance,
+    getDillonAmiimalTypes,
+    getDillonAppearanceParameters,
+    getDillonFaceAnchors,
+    getDillonMiiFacialFeatures,
+    rankDillonAmiimals
+} from "./dillon.js";
 
 const { encodeMii, decodeMii, detectMiiFormat } = miiProcess;
 const { mappings, MiiFormats, ConsoleFormats } = miiFormats;
@@ -81,7 +95,14 @@ async function metricHeightWeightToMiiWeight(...args) {
 }
 
 async function renderMii(...args) {
+    if (String(args[1]?.renderer || '').toLowerCase() === 'dillon') {
+        return callOptionalModule(loadRendering, "renderDillonMii", args);
+    }
     return callOptionalModule(loadRendering, "renderMii", args);
+}
+
+async function renderDillonMii(...args) {
+    return callOptionalModule(loadRendering, "renderDillonMii", args);
 }
 
 async function decryptMii(...args) {
@@ -225,7 +246,7 @@ function getNestedValue(obj, path) {
         }
         return current;
     }
-    catch (e) {
+    catch {
         return null;
     }
 }
@@ -252,10 +273,44 @@ function setNestedValue(obj, key, value) {
         target[lastKey] = value;
         return obj;
     }
-    catch (e) {
+    catch {
         throw new Error(`${key} was not usable.`);
     }
 }
+
+function assertEditableLtdPath(path) {
+    if (path === "ltd.canonicalProjection" || path.startsWith("ltd.canonicalProjection.")
+        || path === "ltd.loveGender.sourceRaw" || path.startsWith("ltd.loveGender.sourceRaw.")) {
+        throw new Error(`${path} is decoder-owned reconciliation state and cannot be edited`);
+    }
+    if (path.startsWith("ltd.") || [
+        "meta.name", "meta.miiId", "meta.type",
+        "general.gender", "general.height", "general.weight"
+    ].includes(path)) return;
+    throw new Error(`${path} is not serialized by LTD; use Mii.convert for cross-generation fields`);
+}
+
+function mergeLtdEdits(target, edits, path = "") {
+    if (!edits || typeof edits !== "object" || Array.isArray(edits) || ArrayBuffer.isView(edits)) {
+        throw new TypeError("Mii.set(object) requires an object");
+    }
+    for (const [key, value] of Object.entries(edits)) {
+        const childPath = path ? `${path}.${key}` : key;
+        if (value && typeof value === "object" && !Array.isArray(value) && !ArrayBuffer.isView(value)) {
+            if (childPath === "ltd.canonicalProjection" || childPath === "ltd.loveGender.sourceRaw") {
+                assertEditableLtdPath(childPath);
+            }
+            if (!target[key] || typeof target[key] !== "object" || Array.isArray(target[key]) || ArrayBuffer.isView(target[key])) {
+                target[key] = {};
+            }
+            mergeLtdEdits(target[key], value, childPath);
+        } else {
+            assertEditableLtdPath(childPath);
+            target[key] = value;
+        }
+    }
+}
+
 function getTrimmedString(value) {
     return typeof value === "string" ? value.trim() : "";
 }
@@ -263,7 +318,7 @@ function cloneQrFields(value) {
     if (typeof structuredClone === "function") {
         try {
             return structuredClone(value);
-        } catch (e) {}
+        } catch {}
     }
     return JSON.parse(JSON.stringify(value));
 }
@@ -298,7 +353,7 @@ function isValidURL(url){
         new URL(url);
         return true;
     }
-    catch(e){
+    catch {
         return false;
     }
 }
@@ -319,7 +374,7 @@ class Mii {
      * @internal
      */
     constructor(decodedMii) {
-        if(typeof decodedMii==="object"&&decodedMii?.meta?.hasOwnProperty("favoriteColor")){
+        if(typeof decodedMii==="object" && (decodedMii?.meta?.hasOwnProperty("favoriteColor") || decodedMii?.general?.hasOwnProperty("favoriteColor") || decodedMii?.ltd)){
             this.fields = decodedMii;
         }
         else{
@@ -360,7 +415,7 @@ class Mii {
                 input = scanned;
             }
         }
-        catch(e){
+        catch {
             // If format probing fails, let decodeMii handle and produce the canonical error.
         }
 
@@ -390,8 +445,8 @@ class Mii {
      * Not intended for user use.
      * @private
      * @param {MiiFormat} format - The format to encode the Mii as
-     */
-    toString(format = MiiFormats.MNMS) {//I would normally just JSON.stringify() here, but we have to have the async loop for toBuffer anyway, might as well make toString more usable as Studio codes (the standard string for Miis at this point)
+    */
+    toString(format = this.fields?.ltd ? MiiFormats.LTD : MiiFormats.MNMS) {//I would normally just JSON.stringify() here, but we have to have the async loop for toBuffer anyway, might as well make toString more usable as Studio codes (the standard string for Miis at this point)
         if (!MiiFormats.hasOwnProperty(format) && getKeyByValue(MiiFormats, format) === null) {
             throw new Error(`Unexpected format: ${format}. Expected one of: ${Object.keys(MiiFormats).join(", ")}`);
         }
@@ -407,7 +462,7 @@ class Mii {
      * @private
      * @param {MiiFormat} format - The format to encode the Mii as
      */
-    toBuffer(format = MiiFormats.CHARINFO) {
+    toBuffer(format = this.fields?.ltd ? MiiFormats.LTD : MiiFormats.CHARINFO) {
         return this.encode(format);
     }
 
@@ -426,15 +481,20 @@ class Mii {
      */
     set(objOrPath, value) {
         if (objOrPath && typeof objOrPath === "object") {
-            Object.assign(this.fields, objOrPath);
+            if (this.fields?.ltd) {
+                mergeLtdEdits(this.fields, objOrPath);
+            } else {
+                Object.assign(this.fields, objOrPath);
+            }
         }
         else if (typeof objOrPath === "string" && value !== undefined) {//value can be null, but not undefined. Undefined!==null, Undefined==null.
             if (mappings.hasOwnProperty(objOrPath)) {
                 objOrPath = mappings[objOrPath];
             }
-            else if (getKeyByValue(mappings, objOrPath) === null) {
+            else if (!objOrPath.startsWith("ltd.") && getKeyByValue(mappings, objOrPath) === null) {
                 return this.fields;
             }
+            if (this.fields?.ltd) assertEditableLtdPath(objOrPath);
             if (value === null) {
                 deleteNestedValue(this.fields, objOrPath);
             }
@@ -481,12 +541,27 @@ class Mii {
     /** 
      * Encode the Mii into a Buffer in the specified format.
      * @param {MiiFormat} format - The format to encode the Mii as
-     */
-    encode(format = MiiFormats.CHARINFO) {
+    */
+    encode(format = this.fields?.ltd ? MiiFormats.LTD : MiiFormats.CHARINFO) {
         if (!MiiFormats.hasOwnProperty(format) && getKeyByValue(MiiFormats, format) === null) {
             throw new Error(`Unexpected format: ${format}. Expected one of: ${Object.keys(MiiFormats).join(", ")}`);
         }
         return encodeMii(this.fields, format);
+    }
+
+    /**
+     * Convert this Mii across generations using an explicit loss policy.
+     * This does not mutate the current instance.
+     * @param {MiiFormat} targetFormat - The format to convert to
+     * @param {object} options - Profile, template, and conversion-policy options
+     * @returns {Promise<{mii: Mii, data: Buffer, fields: MiiData, report: object}>}
+     */
+    async convert(targetFormat, options = {}) {
+        const result = await miiConversion.convertMii(this.fields, targetFormat, options);
+        return {
+            mii: new Mii(result.fields),
+            ...result
+        };
     }
 
     /** Render the mii to a QR code */
@@ -498,7 +573,9 @@ class Mii {
         let qrFields = this.fields;
         let qrFormat = MiiFormats.FFED;
 
-        if (isPlain3dsQr) {
+        if (["SWITCH2", "FEDEX", "FSDEX"].includes(normalizedDevice)) {
+            qrFormat = MiiFormats.FEDEX;
+        } else if (isPlain3dsQr) {
             qrFormat = MiiFormats.CFED;
         } else if (isMiitopiaQr) {
             qrFields = getMiitopiaQrMii(this.fields);
@@ -508,16 +585,11 @@ class Mii {
             if (qrFormat === MiiFormats.MTE) qrFields = getMiitopiaQrMii(this.fields);
         }
 
-        let mii = await encodeMii(qrFields, qrFormat);
         const qrOptions = { ...(options || {}) };
-        if (!qrOptions.image && !qrOptions.noRenderMii) {
-            const overlayPng = await renderMii(qrFields, qrOptions);
-            qrOptions.image = Buffer.isBuffer(overlayPng) ? overlayPng : Buffer.from(overlayPng);
-        }
         if (!qrOptions.label && qrFields?.meta?.name?.length > 0) {
             qrOptions.label = qrFields.meta.name;
         }
-        return makeQR(mii, qrOptions);
+        return makeQR(await encodeMii(qrFields, qrFormat), qrOptions);
     }
 
     /** Render the Mii to an image */
@@ -563,6 +635,7 @@ export {
     imperialHeightWeightToMiiWeight,
     metricHeightWeightToMiiWeight,
     renderMii,
+    renderDillonMii,
     decryptMii,
     encryptMii,
     miiCrcCalc,
@@ -586,6 +659,16 @@ export default{
     ...miiProcess,
     ...miiFormats,
 
+    ...ltd,
+    ...miiConversion,
+    DILLON_AMIIMAL_TYPES: dillon.DILLON_AMIIMAL_TYPES,
+    applyDillonAppearance: dillon.applyDillonAppearance,
+    getDillonAmiimalTypes: dillon.getDillonAmiimalTypes,
+    getDillonAppearanceParameters: dillon.getDillonAppearanceParameters,
+    getDillonFaceAnchors: dillon.getDillonFaceAnchors,
+    getDillonMiiFacialFeatures: dillon.getDillonMiiFacialFeatures,
+    rankDillonAmiimals: dillon.rankDillonAmiimals,
+
     ...qrTools,
 
     insertMiiIntoAmiibo,
@@ -597,6 +680,7 @@ export default{
     imperialHeightWeightToMiiWeight,
     metricHeightWeightToMiiWeight,
     renderMii,
+    renderDillonMii,
     FFLExpression,
     decryptMii,
     encryptMii,

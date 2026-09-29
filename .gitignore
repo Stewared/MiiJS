@@ -1,8 +1,15 @@
 node_modules
 *FLResHigh*
 package-lock.json
-node_modules
 test*
+
+# Local rendering resources are supplied by the caller.
+/CFL_Res.*
+/CFLRes.*
+/cfl_res.*
+/cflres.*
+/romFS/
+/romfs/
 
 # VSCode
 .vsls.json
@@ -10,3 +17,6 @@ test*
 
 # Tests stuff
 __tests__
+
+# Dillon's extracted game assets are supplied locally by the caller.
+/dillon/assets/

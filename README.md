@@ -5,7 +5,7 @@ Build once, work with Miis from any console.
 
 Powers [https://infinimii.com/](InfiniMii), a website that lets you do everything MiiJS does from a GUI.
 
-*Rendering uses Tomodachi Life RomFS body/headwear assets plus `CFL_Res.dat`.*
+Node rendering defaults to Tomodachi Life RomFS models plus `CFL_Res.dat`. The browser and the optional `renderer: "ffl"` route use FFL.js.
 ## Installation
 MiiJS works in both browser and Node.js, and in both ESM and CJS.
 
@@ -20,11 +20,14 @@ MiiJS works in both browser and Node.js, and in both ESM and CJS.
 ### Browser
 Download the latest release zip and serve it unzipped however you like, replace the paths with your relevant path.
 ```html
+<script src="./fflModule.cjs"></script><!-- Required for FFL and Dillon rendering. -->
 <script type="module">
     import MiiJS from "./miijs.browser.js"; //miijs.browser.esm.js available as well
     //Code to interact with MiiJS
 </script>
 ```
+
+The standalone archive includes `fflModule.cjs`, its WebAssembly file, and the two FFL body models.
 
 ### Building
 You only need to build if developing local changes for CJS and/or the Browser, in which case just run `npm run build`.
@@ -104,10 +107,11 @@ Debug values enable extra logging to help figure out why something is breaking a
     - async Mii.setAs(console, path, value) | Set as if selecting an item on that console's Mii Maker, value is [page, countFromTheLeft, countFromTheTop], or [countFromTheLeft, countFromTheTop]
     - async Mii.getAs(console, path) | Get the value as if seeing the item on that console's Mii Maker, see setAs for what value returns
     - Mii.encode(format) | Encodes the Mii to that binary format. Returns a Promise only for optional async encoders such as encrypted QR formats.
-    - async Mii.toQR(options) | Returns a buffer containing a QR code for that Mii, scannable by the 3DS or Wii U. Renders the Mii as an icon for the QR when Tomodachi RomFS assets and CFL_Res.dat are available.
-        - Options values include, size: resolution, image: icon to use, noRenderMii: set to true to not render the Mii icon, label: label text to use instead of the Mii name. Additional passthrough options from [qr-code-styling](https://github.com/kozakdenys/qr-code-styling): qrOptions, dotsOptions, cornersSquareOptions, cornersDotsOptions, backgroundOptions. See Mii.render for more available options.
-    - async Mii.render(fullBodyRender, options) | Returns a buffer containing a Tomodachi-style render of that Mii.
-        - Options values include, fullBody: Render the full body of the Mii instead of just the head, expression: FFLExpression, size: size of the image, tomodachiRomfs: path to a Tomodachi `romFS` folder, cflResPath: path to CFL_Res.dat.
+    - async Mii.toQR(options) | Returns a buffer containing a QR code for that Mii, scannable by the selected console.
+        - Options include `size`, `image`, `noRenderMii`, and `label`, plus the [qr-code-styling](https://github.com/kozakdenys/qr-code-styling) options `qrOptions`, `dotsOptions`, `cornersSquareOptions`, `cornersDotsOptions`, and `backgroundOptions`.
+    - async Mii.render(fullBodyRender, options) | Returns a buffer containing a render of that Mii. Node uses the Tomodachi renderer by default; browsers use FFL.
+        - Tomodachi options include `fullBody`, `size`, `tomodachiRomfs`, `cflResPath`, `tomodachiBodyId`, and `tomodachiHeadwearId`.
+        - Set `renderer: "ffl"` or `tomodachi: false` in Node to use FFL. FFL options include `fullBody`, `expression`, `size`, `bodyPath`, `fflResBuffer`, and `fflResPath`.
     - async Mii.insertIntoAmiibo(amiiboDump) | Provide a buffer containing the Amiibo exactly as it is on the tag, this function returns the same Amiibo with your Mii inserted
     - async Mii.toInstructions(console) | Provides a JSON object containing human readable sentences and directions to recreate the Mii on that console
 - async insertMiiIntoAmiibo(amiiboDump, mii) | See Mii.insertIntoAmiibo
@@ -136,9 +140,12 @@ Debug values enable extra logging to help figure out why something is breaking a
 - decodeMii(miiOfAnyKnownWayOfRepresentingIt, debug) | See Mii.create. Returns a Promise only for optional async decoders such as image QR, encrypted QR, or Amiibo data.
 - encodeMii(MiiClassOrJSON, format) | See Mii.encode. Returns a Promise only for optional async encoders such as encrypted QR formats.
 - async renderMii(mii, options) | See Mii.render
+- async renderDillonMii(mii, options) | Renders a Dillon Amiimal using assets supplied by the caller
+- getDillonAmiimalTypes(mii) | Returns the four Amiimals shown in the in-game menu
+- rankDillonAmiimals(mii) | Returns all ten Amiimals and their scores
 - FFLExpression | See enums
 - scanQR(buffer) | Provide a buffer containing a QR code, returns the buffer the QR code represents.
-- async makeQR(buffer, options) | Provide a buffer, this outputs a QR code with that buffer. If the buffer is a recognized Mii and Tomodachi render assets are present, this will be rendered as an icon for the QR. See Mii.toQR for options.
+- async makeQR(buffer, options) | Creates a QR code from the supplied bytes. See Mii.toQR for options.
 - getNestedValue(object, path) | Get the value of an object down a path, returns null if any step of the path is undefined.
 - setNestedValue(object, path, value) | Set the value of an object down a path, creating any steps necessary if undefined.
 - deleteNestedValue(object, path) | Deletes the key of an object down a path.
@@ -152,6 +159,10 @@ Useful options:
 - `tomodachiRomfs`: path to a `romFS` folder containing `model/body`, `model/headwear`, and `model/obj/obj_mHead.bin.dat`
 - `cflResPath`: path to `CFL_Res.dat`
 - `tomodachiBodyId` / `tomodachiHeadwearId`: optional item ids to override the outfit or hat stored on the Mii
+
+## FFL Rendering Assets
+
+Browser rendering and the optional Node FFL route require `FFLResHigh.dat` (or a compatible `AFLResHigh.dat`). Pass it as `fflResBuffer` or `fflResPath`; Node also looks for common resource filenames in the project and resource directories. The browser archive includes the FFL runtime and the male and female body models.
 
 ## Troubleshooting
 - Special Miis **__must__** have the `meta.originalDevice` field set to the __matching__ device. In all other cases, a 3DS can scan a QR who's originalDevice is 4, and a Wii can scan a QR who's originalDevice is 3. However, in the case of Special Miis, to scan on 3DS you __must__ set `originalDevice` to **3**, and to scan on Wii U you __must__ set `originalDevice` to **4**. MiiJS will handle this automatically if you use the Mii class, just make sure to tell the Mii.toQR function you intend to scan on 3DS or Wii U (see ConsoleFormats enum).
@@ -167,6 +178,33 @@ Decoded TLC, TLS, and TLE data preserves the clothing item IDs and their indepen
 - `tl.clothing.hat` and `tl.clothing.hatColor`
 
 The item IDs are raw little-endian hex strings, while each color field is a catalog palette slot from 0 through 15. Regular clothes (outfit `0000`) are the exception: Tomodachi Life applies `general.favoriteColor` to that model at runtime. Objects decoded by older MiiJS versions do not contain the previously discarded selector bits; decode the original TLC, TLS, or TLE data again to recover them.
+
+### Living the Dream conversion
+
+LTD stores profile, voice, and texture data that older formats do not. Converting an RCD, RSD, or CharInfo Mii therefore needs an LTD profile, usually supplied by a donor file:
+
+```js
+await convertMii(charInfo, MiiFormats.LTD, {
+    mode: "source-backed",
+    ltdProfile: {template: donorLtd, inheritTextures: true}
+});
+```
+
+`exact` refuses lossy cross-generation conversions. `source-backed` uses recovered mappings, while `approximate` permits the reviewed LTD-to-CharInfo backport. Converting LTD to RCD or RSD still requires a matching `legacyTemplate`.
+
+### Dillon Amiimal rendering
+
+Dillon rendering needs `FFLResHigh.dat` plus model and texture files supplied by the caller. They are not distributed with MiiJS; `/dillon/assets/` is gitignored.
+
+```js
+await renderDillonMii(mii, {
+    animal: getDillonAmiimalTypes(mii)[0],
+    dillonAssetsPath: "./dillon/assets",
+    fflResPath: "./FFLResHigh.dat"
+});
+```
+
+Use `dillonAssetsUrl` instead of `dillonAssetsPath` in a browser. `rankDillonAmiimals(mii)` returns the scores for all ten animals.
 
 ## Supported types
 By order of console release. A difference of C vs S dictates not having vs having checksums respectively.
@@ -213,6 +251,12 @@ By order of console release. A difference of C vs S dictates not having vs havin
     - Switch NAND format for the Mii Maker applet
 - .charinfo
     - Switch format as used by games
+- .fedex
+    - Authenticated 144-byte Switch 2 QR payload; Special Miis are exported as the Switch-compatible Default type without changing the source object
+- .fsdex
+    - Decrypted 96-byte Ver3 StoreData followed by the eight-byte modern color/glasses extension, used by both Switch 2 QR data and compact Amiibo owner-Mii extraction
+- .ltd
+    - Tomodachi Life: Living the Dream ShareMii v2/v3 data
 ### My Nintendo Mii Studio/Browser
 - .mnms, .studio, .localstorage
     - The format stored in localstorage in the Mii Studio website
@@ -238,6 +282,7 @@ Each of these is personally used and vetted by at least one of the library autho
 
 ## Credits
 - [HEYimHeroic](https://github.com/HEYimHeroic)'s various work and documentation across many years and articles were and continue to be an invaluable resource to MiiJS' development.
+- [Arian K.](https://github.com/ariankordi)'s [FFL.js](https://github.com/ariankordi/FFL.js/) powers the FFL and Dillon renderers.
 
 ## Disclaimer
 Miis, DS, Wii, 3DS, Wii U, Amiibo, Tomodachi Life, Miitomo, Switch, Switch 2, My Nintendo, Mii Studio, and anything else similar is owned fully by Nintendo of which this library and its authors do not represent.

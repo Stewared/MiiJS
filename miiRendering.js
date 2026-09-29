@@ -1,10 +1,28 @@
 import * as fs from 'fs';
 import * as nodePath from 'path';
 import { fileURLToPath } from 'url';
+import { GLTFLoader, SkeletonUtils } from 'three/examples/jsm/Addons.js';
+import { addSkeletonScalingExtensions } from 'ffl.js/helpers/SkeletonScalingExtensions.js';
+import { detectModelDesc } from 'ffl.js/helpers/ModelScaleDesc.js';
+import {
+    prepareBodyForCharModel,
+    attachHeadToBody,
+    disposeModel as disposeFflModel,
+    adjustCameraForBodyHead,
+    getFaceCamera,
+    getWholeBodyCamera
+} from 'ffl.js/helpers/BodyUtilities.js';
+import { FFL, CharModel, pantsColors } from 'ffl.js';
+import FFLShaderNodeMaterial from 'ffl.js/materials/FFLShaderNodeMaterial.js';
+import FFLShaderMaterial from 'ffl.js/materials/FFLShaderMaterial.js';
+import fflModuleImport from 'ffl.js/examples/ffl-emscripten-single-file.cjs';
 let THREE;
 const BGRA8Unorm = 'bgra8unorm';
 
 import * as processMii from './miiProcess.js';
+import { MiiFormats } from './formats.js';
+import { projectReviewedLtdCharInfoToCharInfo } from './miiConversion.js';
+import * as dillon from './dillon.js';
 import { loadCgfxModelFromFS } from './cgfxLoader.js';
 import {
     decodeCflModel,
@@ -21,6 +39,9 @@ const moduleDir = isNode
     : ".";
 const tomodachiModelScale = 8;
 const FFLExpression = Object.freeze({ NORMAL: 0, SMILE: 1, ANGER: 2, SORROW: 3, SURPRISE: 4, BLINK: 5, OPEN_MOUTH: 6, HAPPY: 7, MAX: 70 });
+const ModuleFFL = isNode
+    ? (fflModuleImport?.ModuleFFL ?? fflModuleImport?.default ?? fflModuleImport)
+    : globalThis.ModuleFFL;
 
 let pngWriterPromise;
 async function encodePngImage(width, height, bgraPixels) {
@@ -243,7 +264,34 @@ function encodeBmpImage(width, height, bgraPixels) {
 }
 
 
-var _miiFaceRes;
+// Some body model functions are from: https://github.com/ariankordi/my-jsfiddles/blob/main/threejs-mii-accurate-body-scaling/script.js
+async function loadGLTFFromFS(path) {
+    if (!fs.existsSync(path)) return null;
+    const content = await fs.promises.readFile(path);
+    // Buffer can be larger than the view, so slice to the actual bytes we read.
+    return new GLTFLoader().parseAsync(
+        content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength),
+        ''
+    );
+}
+async function loadFirstGLTFFromFS(paths) {
+    for (const path of paths) {
+        const gltf = await loadGLTFFromFS(path);
+        if (gltf) return gltf;
+    }
+    return null;
+}
+async function loadGLTFFromURL(url) {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    return new GLTFLoader().parseAsync(await res.arrayBuffer(), '');
+}
+
+
+let _miiFaceRes;
+let _fflRes;
+let bodyTemplates;
 var isInitialised = (async () => {//Yes, ESM has top level await, however we also build for CJS which doesn't.
     if (isNode) {
         var fetchMod = await import("fetch");
@@ -287,8 +335,70 @@ var isInitialised = (async () => {//Yes, ESM has top level await, however we als
             }
             if (breakNow) break;
         }
+
+
+        breakNow = false;
+        for (const folder of [".", "..", "./ffl", "./afl", "./resources", "./FFL", "./AFL", "./Resources", "./node_modules/miijs"]) {
+            for (const name of ["fflreshigh", "aflreshigh", "FFLResHigh", "AFLResHigh", "AFLResHigh_2_3", "aflreshigh_2_3"]) {
+                for (const suffix of ["dat", "bin"]) {
+                    const resourcePath = `${folder}/${name}.${suffix}`;
+                    if (fs.existsSync(resourcePath)) {
+                        _fflRes = await fs.promises.readFile(resourcePath);
+                        breakNow = true;
+                        break;
+                    }
+                }
+                if (breakNow) break;
+            }
+            if (breakNow) break;
+        }
+
+        bodyTemplates = [
+            await loadFirstGLTFFromFS([
+                "./miiMaleBody.glb",
+                "../miiMaleBody.glb",
+                "./node_modules/miijs/miiMaleBody.glb",
+                "../node_modules/miijs/miiMaleBody.glb"
+            ]),
+            await loadFirstGLTFFromFS([
+                "./miiFemaleBody.glb",
+                "../miiFemaleBody.glb",
+                "./node_modules/miijs/miiFemaleBody.glb",
+                "../node_modules/miijs/miiFemaleBody.glb"
+            ])
+        ];
+    }
+    else {
+        bodyTemplates = [
+            await loadGLTFFromURL("./miiMaleBody.glb"),
+            await loadGLTFFromURL("./miiFemaleBody.glb")
+        ];
     }
 })();
+
+function loadBodyModel(gender) {
+    const gltf = bodyTemplates?.[gender];
+    if (!gltf || !gltf.scene) {
+        return null;
+    }
+
+    try {
+        const model = SkeletonUtils.clone(gltf.scene);
+        const animations = gltf.animations ?? [];
+        const mixer = new THREE.AnimationMixer(model);
+
+        if (animations.length) {
+            mixer.clipAction(animations.find(a => a.name === 'Wait') || animations[0])
+                .play()
+                .setLoop(THREE.LoopRepeat, Infinity);
+        }
+
+        return { model, animations, mixer, scaleDesc: detectModelDesc(model) };
+    }
+    catch {
+        return null;
+    }
+}
 
 const tomodachiRenderWarnings = new Set();
 function warnTomodachiOnce(key, message) {
@@ -956,7 +1066,6 @@ function createCflHeadGroup(headAsset, cflResource, opts = {}, tomodachiModels =
     const skinColor = miiPaletteColor(miiSkinColors, opts?.face?.color, 0);
     const hairColor = miiPaletteColor(miiHairColors, opts?.hair?.color, 1);
     const beardColor = miiPaletteColor(miiHairColors, opts?.beard?.color ?? opts?.hair?.color, 1);
-    const featureColor = 0x221817;
     const group = new THREE.Group();
     group.name = "CFLTomodachiHead";
 
@@ -1558,6 +1667,7 @@ async function renderRequestToImage(renderer, request, opts = {}) {
     const scene = new THREE.Scene();
     let tomodachiModels = null;
     let cflHead = null;
+    let renderTarget = null;
 
     const SIZE = Number.isFinite(opts.size) ? Math.max(1, Math.floor(opts.size)) : 256;
 
@@ -1628,17 +1738,17 @@ async function renderRequestToImage(renderer, request, opts = {}) {
             fitCameraToObject(camera, cflHead, 1.35);
         }
 
-        const rt = new THREE.RenderTarget(SIZE, SIZE, {
+        renderTarget = new THREE.RenderTarget(SIZE, SIZE, {
             samples: 4,
             internalFormat: BGRA8Unorm,
             minFilter: THREE.LinearFilter,
             magFilter: THREE.LinearFilter
         });
 
-        renderer.setRenderTarget(rt);
+        renderer.setRenderTarget(renderTarget);
         renderer.render(scene, camera);
 
-        const pixels = await renderer.readRenderTargetPixelsAsync(rt, 0, 0, SIZE, SIZE);
+        const pixels = await renderer.readRenderTargetPixelsAsync(renderTarget, 0, 0, SIZE, SIZE);
         try {
             return await encodePngImage(SIZE, SIZE, pixels);
         }
@@ -1648,6 +1758,7 @@ async function renderRequestToImage(renderer, request, opts = {}) {
         }
     }
     finally {
+        renderTarget?.dispose();
         const disposed = new Set();
         cflHead && disposeModel(cflHead, disposed);
         if (tomodachiModels) {
@@ -1707,11 +1818,410 @@ async function renderForBrowser() {
 
 }
 
-var renderMii;
-if (isNode) renderMii = renderForNode;
-else renderMii = renderForBrowser;
+async function renderFflRequestToImage(renderer, ffl, request, opts = {}) {
+    // Based on: https://github.com/ariankordi/FFL.js/blob/ae0a482abdbd9f81d4e12b055317c12a8a1783a4/examples/nodejs-icon-body-webgpu.js#L168
+    const scene = new THREE.Scene();
+    let charModel = null;
+    let body = null;
+    let renderTarget = null;
+
+    // Square output size (defaults to 256)
+    const SIZE = Number.isFinite(opts.size) ? Math.max(1, Math.floor(opts.size)) : 256;
+
+    try {
+        charModel = new CharModel(ffl, request.data, request.expression, FFLShaderNodeMaterial, renderer);
+
+        charModel.meshes.traverse((m) => {
+            m.frustumCulled = false;
+        });
+
+        // Keep your existing "map -> sRGB" tweak (safe/minimal).
+        // Note: this won't fix the monochrome issue by itself, but it doesn't hurt.
+        charModel.meshes.traverse((m) => {
+            if (m.material?.map) {
+                m.material.map.colorSpace = THREE.SRGBColorSpace;
+                m.material.needsUpdate = true;
+            }
+        });
+
+        // after: charModel = new CharModel(...)
+        scene.add(charModel.meshes); // <-- ALWAYS render head at minimum
+        if(!opts.bodyPath){
+            body = loadBodyModel(charModel.charInfo.gender);
+        }
+        else{
+            bodyTemplates[2]=await loadGLTFFromFS(opts.bodyPath);
+            body=loadBodyModel(2);
+        }
+
+        if (body) {
+            try {
+                body.mixer.update(0);
+
+                prepareBodyForCharModel(
+                    body,
+                    FFLShaderNodeMaterial,
+                    charModel.favoriteColor,
+                    charModel.getBodyScale(),
+                    pantsColors[request.pantsColor].clone().convertLinearToSRGB()
+                );
+
+                attachHeadToBody(body, charModel.meshes);
+
+                // head will get re-parented under the body, so add the body to scene too
+                scene.add(body.model);
+            }
+            catch {
+                // If anything body-related fails, keep head-only rendering
+                body = null;
+            }
+        }
+
+
+
+        let camera;
+        if (request.fullBody && body) {
+            camera = getWholeBodyCamera(1, charModel.charInfo.height);
+        }
+        else {
+            camera = getFaceCamera();
+            if (body) {
+                adjustCameraForBodyHead(camera, body);
+            }
+            else {
+                levelFaceCameraToObject(camera, charModel.meshes);
+            }
+        }
+
+        renderTarget = new THREE.RenderTarget(SIZE, SIZE, {
+            samples: 4,
+            internalFormat: BGRA8Unorm,
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter
+        });
+
+        renderer.setRenderTarget(renderTarget);
+        renderer.render(scene, camera);
+
+        const pixels = await renderer.readRenderTargetPixelsAsync(renderTarget, 0, 0, SIZE, SIZE);
+        try {
+            return await encodePngImage(SIZE, SIZE, pixels);
+        }
+        catch {
+            // Fallback keeps rendering functional if PNG encoder fails unexpectedly.
+            return encodeBmpImage(SIZE, SIZE, pixels);
+        }
+    }
+    finally {
+        renderTarget?.dispose();
+        charModel && charModel.dispose();
+        if (body) {
+            disposeFflModel(body.model);
+            body.mixer.uncacheRoot(body.model);
+        }
+    }
+}
+
+async function renderWithStudio(data, fullBody = false) {
+    data = structuredClone(await processMii.decodeMii(data));
+    data = processMii.encodeMii(data, MiiFormats.EMNMS);
+    const response = await fetch(`https://studio.mii.nintendo.com/miis/image.png?data=${Array.from(data, byte => byte.toString(16).padStart(2, "0")).join("")}${fullBody ? "&type=all_body" : ""}&width=512&instanceCount=1`);
+    if (!response.ok) {
+        throw new Error(`Mii Studio render failed: ${response.status} ${response.statusText}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return (typeof Buffer !== "undefined") ? Buffer.from(arrayBuffer) : new Uint8Array(arrayBuffer);
+}
+
+function getPantsColor(data) {
+    if (data?.meta?.type?.toLowerCase() === "special") return 3;
+    if (data?.perms?.favorited) return 2;
+    if (data?.meta?.type?.toLowerCase() === "foreign") return 1;
+    return 0;
+}
+
+async function renderFflForNode(data, opts = {}) {
+    await isInitialised;
+    //We need some info from the buffer, and we also need to make sure it's in MNMS
+    data = await normalizeDecodedMiiForRender(data);
+
+    // Add size default here so it’s available to renderFflRequestToImage
+    opts = Object.assign({
+        fullBody: false,
+        expression: 0,
+        size: 512
+    }, data, opts);
+
+    opts.size -= opts.size % 64;
+    if (opts.size < 64) opts.size = 64;
+
+    data = processMii.encodeMii(data, MiiFormats.MNMS);
+
+    var resourceFile;
+    if (opts.fflResBuffer) {//Prefer the direct buffer
+        resourceFile = opts.fflResBuffer;
+    }
+    else if (opts.fflResPath) {//Use the path if they provided it
+        resourceFile = await fs.promises.readFile(opts.fflResPath);
+        if (!resourceFile) {
+            try {
+                resourceFile = await fetch(opts.fflResPath);
+                resourceFile = await resourceFile.blob();
+                resourceFile = Buffer.from(resourceFile);
+            }
+            catch{}
+        }
+    }
+    else if (_fflRes) {//See if it's in the root directory and use it automatically if we can
+        resourceFile = _fflRes;
+    }
+    else {//No FFL Resource, no textures or models to render with.
+        console.warn(`FFL Resource is unavailable. See README.md for more information.`);
+        return await renderWithStudio(data, opts.fullBody);
+    }
+
+    addSkeletonScalingExtensions(THREE.Skeleton);
+    await addWebGPUExtensions();
+
+    const renderer = await createThreeRenderer();
+    renderer.onDeviceLost = () => { };
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.NoToneMapping;
+
+    let ffl = null;
+    try {
+        ffl = await FFL.initWithResource(resourceFile, ModuleFFL);
+        ffl.setRenderer(renderer);
+
+        return await renderFflRequestToImage(
+            renderer,
+            ffl,
+            {
+                data,
+                pantsColor: getPantsColor(data),
+                fullBody: opts.fullBody,
+                expression: opts.expression
+            },
+            opts
+        );
+    }
+    finally {
+        (ffl) && ffl.dispose();
+        renderer.dispose();
+        const device = renderer.backend.device;
+        if (device instanceof GPUDevice) {
+            await device.queue.onSubmittedWorkDone();
+            device.destroy();
+        }
+    }
+}
+
+async function renderFflForBrowser(data, opts = {}) {
+    await isInitialised;
+
+    data = await normalizeDecodedMiiForRender(data);
+
+    // Add size default here so it’s available to renderFflRequestToImage
+    opts = Object.assign({
+        fullBody: false,
+        expression: 0,
+        size: 512
+    }, data, opts);
+
+    opts.size -= opts.size % 64;
+    if (opts.size < 64) opts.size = 64;
+
+    data = processMii.encodeMii(data, MiiFormats.MNMS);
+
+    // Load resource as Uint8Array (avoid Buffer in browser)
+    const resourceFile = opts.fflResBuffer || (opts.fflResPath
+        ? new Uint8Array(await (await fetch(opts.fflResPath)).arrayBuffer())
+        : _fflRes instanceof Uint8Array ? _fflRes : _fflRes ? new Uint8Array(_fflRes) : null);
+    if (!resourceFile) {
+        console.warn(`FFL Resource is unavailable. See README.md for more information.`);
+        return await renderWithStudio(data, opts.fullBody);
+    }
+    const ffl = await FFL.initWithResource(resourceFile, ModuleFFL);
+
+    // Create scene.
+    addSkeletonScalingExtensions(THREE.Skeleton);
+
+    const scene = new THREE.Scene();
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(opts.size, opts.size, false);
+
+    ffl.setRenderer(renderer);
+
+    // Head model
+    let currentCharModel = new CharModel(ffl, data, opts.expression, FFLShaderMaterial, renderer);
+    currentCharModel.meshes.traverse(m => { m.frustumCulled = false; });
+    let body;
+    if(!opts.bodyPath){
+        body = loadBodyModel(currentCharModel.charInfo.gender);
+    }
+    else{
+        bodyTemplates[2]=await loadGLTFFromFS(opts.bodyPath);
+        body=loadBodyModel(2);
+    }
+
+    if (body) {
+        body.mixer.update(0);
+
+        prepareBodyForCharModel(
+            body,
+            FFLShaderMaterial,
+            currentCharModel.favoriteColor,
+            currentCharModel.getBodyScale(),
+            pantsColors[getPantsColor(data)].clone().convertLinearToSRGB()
+        );
+
+        attachHeadToBody(body, currentCharModel.meshes);
+        scene.add(body.model);
+    }
+    else {
+        scene.add(currentCharModel.meshes);
+    }
+
+    let camera;
+    if (opts.fullBody && body) {
+        camera = getWholeBodyCamera(1, currentCharModel.charInfo.height);
+    }
+    else {
+        camera = getFaceCamera();
+        if (body) {
+            adjustCameraForBodyHead(camera, body);
+        }
+        else {
+            levelFaceCameraToObject(camera, currentCharModel.meshes);
+        }
+    }
+
+    renderer.render(scene, camera);
+
+
+    // Ensure GPU finished
+    renderer.getContext().finish();
+
+    // Convert canvas -> PNG bytes
+    const arrayBuffer = await (await new Promise(resolve =>
+        renderer.domElement.toBlob(resolve, "image/png")
+    )).arrayBuffer();
+
+    // Return Buffer in Node, Uint8Array in browser
+    return (typeof Buffer !== "undefined") ? Buffer.from(arrayBuffer) : new Uint8Array(arrayBuffer);
+}
+
+let dillonRenderQueue = Promise.resolve();
+
+// FFL has shared native state, so Dillon renders must be serialized.
+function renderDillonMii(input, opts = {}) {
+    const job = dillonRenderQueue.then(async () => {
+        await isInitialised;
+        let decoded = structuredClone(await processMii.decodeMii(input?.fields || input));
+        if (decoded?.ltd?.charInfo) {
+            decoded = await processMii.decodeMii(projectReviewedLtdCharInfoToCharInfo(decoded));
+        }
+        const animal = dillon.resolveDillonAnimal(opts.animal, decoded);
+        const appearance = dillon.applyDillonAppearance(decoded, animal);
+        const parameters = dillon.getDillonAppearanceParameters(animal, decoded);
+        appearance.glasses.type = normalizeGlassesTypeFor3DSRender(appearance.glasses.type);
+        const size = opts.size ?? 512;
+        if (!Number.isInteger(size) || size < 64 || size > 2048) {
+            throw new RangeError("Dillon render size must be an integer from 64 through 2048.");
+        }
+        let resource = opts.fflResBuffer || _fflRes;
+        if (opts.fflResPath) {
+            resource = isNode ? await fs.promises.readFile(opts.fflResPath)
+                : new Uint8Array(await (await fetch(opts.fflResPath)).arrayBuffer());
+        }
+        if (!resource) throw new Error("Dillon rendering requires FFLResHigh.dat (fflResBuffer or fflResPath).");
+        const renderer = isNode ? await createThreeRenderer()
+            : new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+        renderer.outputColorSpace = THREE.SRGBColorSpace;
+        renderer.toneMapping = THREE.NoToneMapping;
+        if (!isNode) renderer.setSize(size, size, false);
+        let ffl, charModel, model, target, facelineTarget;
+        try {
+            ffl = await FFL.initWithResource(resource, ModuleFFL);
+            ffl.setRenderer(renderer);
+            const Material = isNode ? FFLShaderNodeMaterial : FFLShaderMaterial;
+            charModel = new CharModel(ffl, await processMii.encodeMii(appearance, MiiFormats.MNMS),
+                opts.expression ?? 0, Material);
+            charModel.facelineColor.setRGB(...parameters.faceColor.slice(0, 3).map(channel => channel / 255), THREE.SRGBColorSpace);
+            facelineTarget = await dillon.initializeDillonTextures(
+                charModel,
+                renderer,
+                class extends Material {
+                    constructor(options) {
+                        super(options);
+                        if (this.modulateType === 9 || this.modulateType === 16) {
+                            this.color.setRGB(...parameters.hairColor.slice(0, 3).map(channel => channel / 255), THREE.SRGBColorSpace);
+                        }
+                    }
+                },
+                THREE,
+                parameters,
+                opts
+            );
+            model = await dillon.createDillonModel(appearance, charModel, THREE, { ...opts, fullBody: true, animal, originalMii: decoded, facelineTarget });
+            const scene = new THREE.Scene();
+            scene.add(model);
+            scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+            const light = new THREE.DirectionalLight(0xffffff, 2);
+            light.position.set(-100, 150, 200);
+            scene.add(light);
+            const camera = dillon.getDillonCamera(model, THREE, Boolean(opts.fullBody));
+            if (isNode) {
+                target = new THREE.RenderTarget(size, size, { samples: 4, internalFormat: 'bgra8unorm-srgb',
+                    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+                target.texture.colorSpace = THREE.SRGBColorSpace;
+                renderer.setRenderTarget(target);
+                renderer.render(scene, camera);
+                return await encodePngImage(
+                    size,
+                    size,
+                    await renderer.readRenderTargetPixelsAsync(target, 0, 0, size, size)
+                );
+            }
+            renderer.render(scene, camera);
+            const blob = await new Promise(resolve => renderer.domElement.toBlob(resolve, 'image/png'));
+            if (!blob) throw new Error("Dillon PNG encoding failed.");
+            return new Uint8Array(await blob.arrayBuffer());
+        } finally {
+            if (model) dillon.disposeDillonModel(model);
+            if (charModel) charModel.dispose();
+            if (facelineTarget) facelineTarget.dispose();
+            if (target) target.dispose();
+            if (ffl) ffl.dispose();
+            renderer.dispose();
+            if (isNode) {
+                const device = renderer.backend.device;
+                if (device) {
+                    await device.queue.onSubmittedWorkDone();
+                    device.destroy();
+                }
+            }
+        }
+    });
+    dillonRenderQueue = job.then(() => undefined, () => undefined);
+    return job;
+}
+
+function renderMii(data, opts = {}) {
+    if (!isNode) {
+        return opts.tomodachi === true
+            ? renderForBrowser(data, opts)
+            : renderFflForBrowser(data, opts);
+    }
+    if (opts.tomodachi === false || opts.renderer === "ffl" || opts.fflResBuffer || opts.fflResPath || opts.bodyPath) {
+        return renderFflForNode(data, opts);
+    }
+    return renderForNode(data, opts);
+}
 
 export {
     renderMii,
+    renderDillonMii,
     FFLExpression
 };

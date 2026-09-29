@@ -1,0 +1,23 @@
+/.github/
+/.vscode/
+/.vsls.json
+/spec/
+/test*
+/dillon/assets/
+*FLResHigh*
+/CFL_Res.*
+/CFLRes.*
+/cfl_res.*
+/cflres.*
+/romFS/
+/romfs/
+*.log
+
+# Development/build entry points are not part of the installed runtime.
+/build.cjs
+/jsdocBuilder.js
+/mii-jsdoc.js
+
+# Published consumers use dist/ directly; omit the duplicate archive and maps.
+/browserBuild.zip
+/dist/**/*.map

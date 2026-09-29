@@ -51,8 +51,7 @@ test("Tomodachi Life clothing selectors survive TLC, TLS, TLE, and Mii round tri
         const encoded = await encodeMii(decoded, format);
         assert.ok(detectMiiFormat(encoded).includes(format));
 
-        const clear = format === MiiFormats.TLE ? await decryptMii(encoded) : encoded;
-        const packed = clear.readUInt32LE(offset);
+        const packed = (format === MiiFormats.TLE ? await decryptMii(encoded) : encoded).readUInt32LE(offset);
         assert.equal((packed >>> 14) & 0xF, 0xB);
         assert.equal((packed >>> 18) & 0xF, 0xD);
 
@@ -74,8 +73,17 @@ test("Tomodachi Life clothing selectors survive TLC, TLS, TLE, and Mii round tri
     const withoutSelectors = structuredClone(decoded);
     delete withoutSelectors.tl.clothing.outfitColor;
     delete withoutSelectors.tl.clothing.hatColor;
-    const defaultedTls = await encodeMii(withoutSelectors, MiiFormats.TLS);
-    const defaultedWord = defaultedTls.readUInt32LE(0xA0);
+    const defaultedWord = (await encodeMii(withoutSelectors, MiiFormats.TLS)).readUInt32LE(0xA0);
     assert.equal((defaultedWord >>> 14) & 0xF, 0);
     assert.equal((defaultedWord >>> 18) & 0xF, 0);
+});
+
+test("Tomodachi Life encrypted extra data rejects a bad CRC", async () => {
+    const encrypted = await encodeMii(await decodeMii(tlcFixture), MiiFormats.TLE);
+    const tampered = Buffer.from(encrypted);
+    tampered[0x80] ^= 1;
+
+    const tamperedClear = await decryptMii(tampered);
+    assert.equal(tamperedClear.length, 0x60);
+    assert.deepEqual(tamperedClear, (await decryptMii(encrypted)).subarray(0, 0x60));
 });

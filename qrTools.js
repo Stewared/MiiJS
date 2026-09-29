@@ -222,7 +222,7 @@ async function scanQR(input) {
 
     if (!decoded) throw new Error("QR code not found");
     return Buffer.from(decoded.binaryData);
-  } catch (e) {
+  } catch {
     return null;
   }
 }

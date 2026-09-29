@@ -1,7 +1,8 @@
 //This is a JS file exclusively because I want to have comments, it would be JSON otherwise.
 export const backTables={
     "3ds":{
-        //These are lossy, but as close as we can get to the original feature when backporting. 
+        // MiiJS approximations for selectors that did not exist on Wii/DS.
+        // These are lossy visual choices, not source-backed Nintendo mappings.
         //Positions for eyes will be somewhat troublesome.
         //There are a LOT of hairs to sort through. I am open to modifying this conversion.
         "hairs":[
@@ -27,34 +28,34 @@ export const backTables={
         ],
     },
     "switch":{
-        "glassesTypes":[4,2,2,3,6,8,6,7,8,6,6],
-        "faceColors":[0,1,2,3,4,5,3,2,4,5],
+        // Exact Switch-to-Ver3 downgrade tables. `glassesTypes` contains only
+        // the Switch-only types 9-19; the color arrays use direct indices.
+        // Source: ISC-licensed MiiPort, pinned:
+        // https://github.com/Genwald/MiiPort/blob/15a3032dd2e929c8b3686fd357b7b86032794dac/include/convert_mii.h#L18-L28
+        "glassesTypes":[1,2,1,3,7,7,6,7,8,7,7],
+        "faceColors":[0,1,2,3,4,5,0,1,5,5],
 
-        // Tables originally from MiiPort:
-        // https://github.com/Genwald/MiiPort/blob/4ee38bbb8aa68a2365e9c48d59d7709f760f9b5d/include/convert_mii.h#L18-L28
-        // Cross-referenced against Arian Kordi's notes:
-        // https://jsfiddle.net/arian_/n8fesLdj/3/
         "glassesColors":[
-            0, 1, 1, 1, 5, 1, 1, 4, 0, 5, 
-            1, 1, 3, 5, 1, 2, 3, 4, 5, 4, 
-            2, 2, 4, 4, 2, 2, 2, 2, 2, 2, 
-            2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 
+            0, 1, 1, 1, 5, 1, 1, 4, 0, 5,
+            1, 1, 3, 5, 1, 2, 3, 4, 5, 4,
+            2, 2, 4, 4, 2, 2, 2, 2, 2, 2,
+            2, 2, 2, 2, 2, 2, 2, 2, 3, 3,
             3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-            3, 3, 3, 3, 3, 3, 0, 0, 0, 5, 
-            3, 5, 5, 5, 5, 0, 5, 5, 5, 5, 
-            5, 5, 5, 5, 5, 5, 5, 4, 5, 5,
-            5, 5, 5, 1, 4, 4, 4, 4, 4, 4, 
+            3, 3, 3, 3, 3, 3, 0, 0, 0, 5,
+            5, 5, 5, 5, 5, 0, 5, 5, 5, 5,
+            5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+            5, 5, 5, 1, 4, 4, 4, 4, 4, 4,
             4, 4, 4, 4, 5, 5, 5, 5, 5, 5
         ],
         "hairsColors":[
-            0, 1, 2, 3, 4, 5, 6, 7, 0, 4, 3, 5, 4, 5, 6, 2, 0, 6, 4, 3, 2, 2, 7, 3, 2, 2,
+            0, 1, 2, 3, 4, 5, 6, 7, 0, 4, 3, 5, 4, 4, 6, 2, 0, 6, 4, 3, 2, 2, 7, 3, 2, 2,
             2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 0, 0, 4, 4,
-            4, 4, 4, 4, 0, 0, 0, 5, 5, 4, 4, 4, 4, 5, 5, 5, 4, 4, 7, 4, 4, 4, 4, 5, 7, 5,
+            4, 4, 4, 4, 0, 0, 0, 4, 4, 4, 4, 4, 4, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 5, 7, 5,
             7, 7, 7, 7, 7, 6, 7, 7, 7, 7, 7, 3, 7, 7, 7, 7, 7, 0, 4, 4, 4, 4
         ],
         "eyesColors":[
             0, 2, 2, 2, 1, 3, 2, 3, 0, 1, 2, 3, 4, 5, 2, 2, 4, 2, 1, 2, 2, 2, 2, 2, 2, 2,
-            2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0, 0, 4, 4, 4, 4, 4, 4, 4, 1, 0, 4, 4, 4,
+            2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 4, 4, 4, 4, 4, 4, 4, 1, 0, 4, 4, 4,
             4, 4, 4, 4, 0, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 3, 3, 3,
             3, 3, 3, 3, 3, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1
         ],
